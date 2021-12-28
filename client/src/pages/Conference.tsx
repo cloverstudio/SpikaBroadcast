@@ -23,7 +23,7 @@ function Conference() {
   const [participants, setParticipants] = useState<Array<Participant>>(null);
   const [consumerRefs, setConsumerRefs] = useState([]);
   const [cameraEnabled, setCameraEnabled] = useState<boolean>(true);
-  const [screenShareEnabled, setScreenShareEnabled] = useState<boolean>(true); ''
+  const [screenShareEnabled, setScreenShareEnabled] = useState<boolean>(false); ''
   const [micEnabled, setMicEnabled] = useState<boolean>(true);
   const [spikabroadcastClient, setSpikabroadcastClient] =
     useState<SpikaBroadcastClient>(null);
