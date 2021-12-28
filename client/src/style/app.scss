@@ -552,7 +552,7 @@ body {
 
       &.type3 {
         display: grid;
-        grid-template-rows: repeat(auto-fill, 1fr 1fr);
+        grid-template-rows: repeat(auto-fill, 1fr);
         grid-template-columns: 1fr 1fr 1fr;
 
         @media (max-width: 768px) {
@@ -581,6 +581,59 @@ body {
             width: calc(100vw / 3 - 12px);
             height: calc(
               (100vh - 80px) / 2 - 12px
+            ); // height . controll buttons . margin + border
+            margin: 5px;
+            background-color: $video_bg;
+            border: 1px solid $video_border;
+
+            @media (max-width: 768px) {
+              width: 50vw;
+              height: calc(
+                (100vh - 80px) / 3
+              ); // height . controll buttons . margin + border
+            }
+            @supports (-webkit-touch-callout: none) {
+              width: calc(100vw / 2 - 12px);
+              height: calc(
+                (100vh - 110px - 80px) / 3 - 12px
+              ); // height . ios safari buttons . controll buttons . margin + border
+            }
+          }
+        }
+      }
+
+
+      &.type4 {
+        display: grid;
+        grid-template-rows: repeat(auto-fill, 1fr );
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+
+        @media (max-width: 768px) {
+          grid-template-rows: repeat(auto-fill, 1fr);
+          grid-template-columns: 1fr 1fr;
+        }
+
+        div.me {
+          grid-row: 3;
+          grid-column: 1;
+
+          @media (max-width: 768px) {
+            grid-row: 3;
+            grid-column: 1;
+          }
+        }
+
+        div {
+          align-items: center;
+          justify-content: center;
+          display: flex;
+          background-color: $video_bg;
+          padding: 0px;
+
+          video {
+            width: calc(100vw / 4 - 12px);
+            height: calc(
+              (100vh - 80px) / 3 - 12px
             ); // height . controll buttons . margin + border
             margin: 5px;
             background-color: $video_bg;
@@ -642,3 +695,4 @@ body {
     color: #f44;
   }
 }
+
