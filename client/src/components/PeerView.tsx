@@ -97,14 +97,14 @@ export default ({
       stream.addTrack(videoTrack);
       videoElm.current.srcObject = stream;
 
-      videoElm.current.oncanplay = () => {};
+      videoElm.current.oncanplay = () => { };
       videoElm.current.onplay = () => {
         audioElm &&
           audioElm.current &&
-          audioElm.current.play().catch((error) => {});
+          audioElm.current.play().catch((error) => { });
       };
 
-      videoElm.current.onpause = () => {};
+      videoElm.current.onpause = () => { };
 
       videoElm.current
         .play()

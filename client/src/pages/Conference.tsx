@@ -23,6 +23,7 @@ function Conference() {
   const [participants, setParticipants] = useState<Array<Participant>>(null);
   const [consumerRefs, setConsumerRefs] = useState([]);
   const [cameraEnabled, setCameraEnabled] = useState<boolean>(true);
+  const [screenShareEnabled, setScreenShareEnabled] = useState<boolean>(true); ''
   const [micEnabled, setMicEnabled] = useState<boolean>(true);
   const [spikabroadcastClient, setSpikabroadcastClient] =
     useState<SpikaBroadcastClient>(null);
@@ -65,11 +66,14 @@ function Conference() {
         onCameraStateChanged: (state) => {
           setCameraEnabled(state);
         },
-        onSpeakerStateChanged: () => {},
-        onCallClosed: () => {},
-        onUpdateCameraDevice: () => {},
-        onUpdateMicrophoneDevice: () => {},
-        onUpdateSpeakerDevice: () => {},
+        onScreenShareStateChanged: (state) => {
+          setScreenShareEnabled(state);
+        },
+        onSpeakerStateChanged: () => { },
+        onCallClosed: () => { },
+        onUpdateCameraDevice: () => { },
+        onUpdateMicrophoneDevice: () => { },
+        onUpdateSpeakerDevice: () => { },
         onLogging: (type, message) => {
           if (typeof message !== "string")
             message = `<span class="small">${Utils.printObj(message)}</span>`;
@@ -88,7 +92,8 @@ function Conference() {
     const participantCount = participants.length;
     if (participantCount <= 1) setPeerContainerClass("type1");
     else if (participantCount <= 3) setPeerContainerClass("type2");
-    else setPeerContainerClass("type3");
+    else if (participantCount <= 5) setPeerContainerClass("type3");
+    else setPeerContainerClass("type4");
   }, [participants]);
 
   const consumerVideoElmInit = (elm: HTMLVideoElement, i: number) => {
@@ -125,12 +130,12 @@ function Conference() {
           <>
             {participants
               ? participants.map((participant, i) => {
-                  return (
-                    <div className="participant">
-                      <Peer participant={participant} key={participant.id} />
-                    </div>
-                  );
-                })
+                return (
+                  <div className="participant">
+                    <Peer participant={participant} key={participant.id} />
+                  </div>
+                );
+              })
               : null}
           </>
         </div>
@@ -177,8 +182,15 @@ function Conference() {
               </a>
             </li>
             <li>
-              <a className="button">
-                <i className="fal fa-desktop"></i>
+              <a
+                className="large_icon"
+                onClick={(e) => spikabroadcastClient.toggleScreenShare()}
+              >
+                {!screenShareEnabled ? (
+                  <i className="fas fa-desktop" />
+                ) : (
+                  <i className="fas fa-stop-circle" />
+                )}
               </a>
             </li>
             <li>
