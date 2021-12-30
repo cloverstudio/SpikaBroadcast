@@ -15,6 +15,7 @@ $video_border: #12121255;
 body {
   background-color: $gray;
   margin: 0;
+  overflow: hidden;
 }
 
 #spikabroadcast {
@@ -368,16 +369,22 @@ body {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
     grid-template-areas:
-      "main"
+      "video"
       "buttons";
     color: #fff;
+
+    &.screen-share{
+      grid-template-areas:
+        "sceenshare video"
+        "buttons buttons";
+    }
 
     @media (max-width: 768px) {
       width: 100vw;
       height: auto;
       grid-template-columns: 1fr;
       grid-template-rows: 1fr;
-      grid-template-areas: "main";
+      grid-template-areas: "video";
     }
 
     @supports (-webkit-touch-callout: none) {
@@ -422,8 +429,49 @@ body {
         color: #ccc;
       }
     }
-    div.peers {
-      grid-area: main;
+    
+    &.screen-share div.peers {
+
+      grid-area: video;
+      background-color: $gray;
+      padding: 0px;
+      margin: 0px;
+      height: calc(100vh - 75px);
+      overflow-x: hidden;
+      overflow-y: auto;
+
+      div {
+        margin: 0px;
+        padding: 0px;
+        video {
+          width: calc(25vw - 12px);
+          height: calc(
+            15vw - 12px
+          ); // height . controll buttons . margin + border
+          background-color: $video_bg;
+        }
+      }
+    }
+
+    &.screen-share div.screenshare {
+      grid-area: sceenshare;
+      background-color: $gray;
+      padding: 0px;
+      margin: 0px;
+      height: calc(100vh - 75px);
+      width: 75vw;
+      overflow-x: hidden;
+      overflow-y: hidden;
+
+      video {
+        width:100%;
+        height: 100%;
+      }
+
+    }
+
+    &.no-screen-share div.peers {
+      grid-area: video;
       background-color: $gray;
       padding: 0px;
       margin: 0px;
@@ -444,24 +492,6 @@ body {
         align-items: center;
         justify-content: center;
         display: flex;
-        /*
-      position: relative;
-      .consumer-info {
-        position: absolute;
-        top: 0px;
-        left: 0px;
-        font-size: 10px;
-        height: 100%;
-        overflow: hidden;
-      }
-      ul {
-        margin: 0px;
-        padding: 10px;
-        li {
-          list-style: none;
-        }
-      }
-      */
       }
 
       audio {
@@ -656,6 +686,7 @@ body {
       }
     }
 
+
     div.controlls {
       grid-area: buttons;
       width: 100%;
@@ -696,3 +727,71 @@ body {
   }
 }
 
+.float-button{
+  background-color: rgba($color: #121212, $alpha: 0.1);
+  color: $light_gray;
+  font-size: 24px;
+  border-radius: 5px;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  cursor: pointer;
+  position: absolute;
+  width: 50px;
+  height: 50px;
+}
+.settings-button{
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  width: 50px;
+  height: 50px;
+  z-index: 1000;
+}
+
+.settings-view{
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 500px;
+  height: 100vh;
+  background-color: $white;
+  transition:all 0.5s ease;
+  padding:25px;
+  padding-top:100px;
+  z-index: 1001;
+  &.close {
+    right: -600px;
+  }
+
+  &.open {
+    right: 0px;
+  }
+
+  .float-button {
+    top: 25px;
+    left: 25px;
+    color: $dark_gray;
+    z-index: 1002;
+  }
+
+  div{
+    label{
+      display: block;
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+    select{
+      display: block;
+      padding: 10px;
+      width: 300px;
+    }
+    button{
+      padding: 10px;
+      width: 150px;
+      float: right;
+    }
+
+    margin-bottom: 25px;
+  }
+}

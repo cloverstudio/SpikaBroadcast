@@ -42,6 +42,7 @@ const EXTERNAL_VIDEO_SRC: string =
 interface SpikaBroacstLinstener {
   onStartVideo: (producer: mediasoupClient.types.Producer) => void;
   onStartAudio: (producer: mediasoupClient.types.Producer) => void;
+  onStartShare: (producer: mediasoupClient.types.Producer) => void;
   onParticipantUpdate: (participants: Map<String, Participant>) => void;
   onMicrophoneStateChanged: (state: boolean) => void;
   onCameraStateChanged: (state: boolean) => void;
@@ -96,6 +97,7 @@ export default class SpikaBroadcastClient {
     device: null,
     resolution: "hd",
   };
+  microphone: MediaDeviceInfo = null;
   forceH264: boolean = false;
   forceVP9: boolean = false;
   externalVideo: any;
@@ -384,48 +386,52 @@ export default class SpikaBroadcastClient {
   async setMicrophoneDevice() { }
   async setSpeakerDevice() { }
 
+  async updateCamera(device: MediaDeviceInfo) {
+    this.webcam.device = device;
+    await this._disableWebcam();
+    await this._enableWebcam();
+  }
+
   async toggleCamera() {
 
-    if (this.screenShareEnabled) {
-      await this._disableScreenShare();
-      this.screenShareEnabled = false;
+    let success: boolean = false;
+
+    if (this.cameraEnabled) success = await this._disableWebcam();
+    else success = await this._enableWebcam();
+
+    if (success) {
+      this.cameraEnabled = !this.cameraEnabled;
+
+      if (this.listeners.onCameraStateChanged)
+        this.listeners.onCameraStateChanged(this.cameraEnabled);
     }
-
-    if (this.cameraEnabled) await this._disableWebcam();
-    else await this._enableWebcam();
-
-    this.cameraEnabled = !this.cameraEnabled;
-    if (this.listeners.onCameraStateChanged)
-      this.listeners.onCameraStateChanged(this.cameraEnabled);
-
-    if (this.listeners.onScreenShareStateChanged)
-      this.listeners.onScreenShareStateChanged(this.screenShareEnabled);
 
   }
   async toggleScreenShare() {
-    if (this.cameraEnabled) {
-      await this._disableWebcam();
-      this.cameraEnabled = false;
-    }
+
+    let success: boolean = false;
 
     if (this.screenShareEnabled) {
-      await this._disableScreenShare();
-      await this._enableWebcam();
-      this.cameraEnabled = true;
+      success = await this._disableScreenShare();
     }
-    else await this._enableScreenShare();
+    else success = await this._enableScreenShare();
 
+    if (success) {
+      this.screenShareEnabled = !this.screenShareEnabled;
+      console.log("this.screenShareEnabled", this.screenShareEnabled);
+      if (this.listeners.onScreenShareStateChanged)
+        this.listeners.onScreenShareStateChanged(this.screenShareEnabled);
+    }
 
-    this.screenShareEnabled = !this.screenShareEnabled;
-
-    console.log("this.screenShareEnabled", this.screenShareEnabled);
-
-    if (this.listeners.onScreenShareStateChanged)
-      this.listeners.onScreenShareStateChanged(this.screenShareEnabled);
-
-    if (this.listeners.onCameraStateChanged)
-      this.listeners.onCameraStateChanged(this.cameraEnabled);
   }
+
+
+  async updateMicrophone(device: MediaDeviceInfo) {
+    this.microphone = device;
+    await this._disableMic();
+    await this._enableMic();
+  }
+
   async toggleMicrophone() {
     if (!this.micProducer) {
       this.logger.warn("Microphone is not ready");
@@ -444,6 +450,7 @@ export default class SpikaBroadcastClient {
 
         if (this.listeners.onMicrophoneStateChanged)
           this.listeners.onMicrophoneStateChanged(this.micEnabled);
+
       } catch (e) {
         this.logger.error("toggleMicrophone() failed");
         this.logger.error(`<span class="small">${Utils.printObj(e)}</span>`);
@@ -703,8 +710,16 @@ export default class SpikaBroadcastClient {
     let track;
 
     try {
+
+      if (!this.microphone) {
+        const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
+        const microphones: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "audioinput");
+        this.microphone = microphones[0];
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+        audio: {
+          deviceId: this.microphone.deviceId
+        },
       });
 
       track = stream.getAudioTracks()[0];
@@ -786,11 +801,11 @@ export default class SpikaBroadcastClient {
   async _enableWebcam() {
     this.logger.debug("enableWebcam()");
 
-    if (this.webcamProducer) return;
+    if (this.webcamProducer) return false;
 
     if (!this.mediasoupDevice.canProduce("video")) {
       this.logger.error("enableWebcam() | cannot produce video");
-      return;
+      return false;
     }
 
     let track;
@@ -888,18 +903,22 @@ export default class SpikaBroadcastClient {
         this.logger.debug("webcam trackended");
         this._disableWebcam().catch(() => { });
       });
+
+      return true;
+
     } catch (error) {
       this.logger.error("enableWebcam() failed");
       this.logger.error(`<span class="small">${Utils.printObj(error)}</span>`);
 
       if (track) track.stop();
+      return false;
     }
   }
 
   async _disableWebcam() {
     this.logger.debug("disableWebcam()");
 
-    if (!this.webcamProducer) return;
+    if (!this.webcamProducer) return false;
 
     this.webcamProducer.close();
 
@@ -909,9 +928,11 @@ export default class SpikaBroadcastClient {
       });
     } catch (error) {
       this.logger.error("closeProducer failed");
+      return false;
     }
 
     this.webcamProducer = null;
+    return true;
   }
 
   async _updateWebcams() {
@@ -953,7 +974,7 @@ export default class SpikaBroadcastClient {
     this.logger.debug('disableShare()');
 
     if (!this.shareProducer)
-      return;
+      return false;
 
     this.shareProducer.close();
 
@@ -963,9 +984,11 @@ export default class SpikaBroadcastClient {
     }
     catch (error) {
       this.logger.error("failed to dislable screen share");
+      return false;
     }
 
     this.shareProducer = null;
+    return true;
 
   }
 
@@ -974,11 +997,11 @@ export default class SpikaBroadcastClient {
     this.logger.debug('enableShare()');
 
     if (this.shareProducer)
-      return;
+      return false;
 
     if (!this.mediasoupDevice.canProduce('video')) {
       this.logger.error('enableShare() | cannot produce video');
-      return;
+      return false;
     }
 
     let track;
@@ -1023,7 +1046,6 @@ export default class SpikaBroadcastClient {
         }
       }
 
-
       this.shareProducer = await this.sendTransport.produce(
         {
           track,
@@ -1036,8 +1058,8 @@ export default class SpikaBroadcastClient {
           }
         });
 
-      if (this.listeners.onStartVideo)
-        this.listeners.onStartVideo(this.shareProducer);
+      if (this.listeners.onStartShare)
+        this.listeners.onStartShare(this.shareProducer);
 
       if (this.e2eKey && e2e.isSupported()) {
         e2e.setupSenderTransform(this.shareProducer.rtpSender);
@@ -1052,6 +1074,8 @@ export default class SpikaBroadcastClient {
           .catch(() => { });
       });
 
+      return true;
+
     }
     catch (error) {
       this.logger.error('enableShare() | failed:%o');
@@ -1059,6 +1083,8 @@ export default class SpikaBroadcastClient {
 
       if (track)
         track.stop();
+
+      return false;
     }
   }
 }

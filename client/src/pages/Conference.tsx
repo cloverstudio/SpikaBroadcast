@@ -11,8 +11,11 @@ import SpikaBroadcastClient, { Participant } from "../lib/SpikaBroadcastClient";
 import { types as mediasoupClientTypes } from "mediasoup-client";
 import Utils from "../lib/Utils";
 import Peer from "../components/Peer";
+import ScreenShareView from "../components/ScreenShareView";
 import Me from "../components/Me";
 import dayjs from "dayjs";
+import deviceInfo from "../lib/deviceInfo";
+
 
 function Conference() {
   let history = useHistory();
@@ -31,10 +34,17 @@ function Conference() {
     useState<mediasoupClient.types.Producer>(null);
   const [microphoneProducer, setMicrophoneProducer] =
     useState<mediasoupClient.types.Producer>(null);
+  const [screenShareProducer, setScreenshareProducer] =
+    useState<mediasoupClient.types.Producer>(null);
   const [log, setLog] = useState<Array<any>>([]);
   const [peerContainerClass, setPeerContainerClass] = useState<string>("type1");
-
+  const [screenShareMode, setScreenShareMode] = useState<boolean>(false);
   let { roomId }: { roomId?: string } = useParams();
+  const [openSettings, setOpenSettings] = useState<boolean>(false);
+  const [cameras, setCameras] = useState<Array<MediaDeviceInfo>>([]);
+  const [microphones, setMicrophones] = useState<Array<MediaDeviceInfo>>([]);
+  const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
+  const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
 
   const peerId = localStorage.getItem("peerId")
     ? localStorage.getItem("peerId")
@@ -58,7 +68,9 @@ function Conference() {
           setMicrophoneProducer(producer);
         },
         onParticipantUpdate: (participants) => {
-          setParticipants(Array.from(participants, ([key, val]) => val));
+          const participantsAry: Array<Participant> =
+            Array.from(participants, ([key, val]) => val);
+          setParticipants(participantsAry);
         },
         onMicrophoneStateChanged: (state) => {
           setMicEnabled(state);
@@ -68,6 +80,9 @@ function Conference() {
         },
         onScreenShareStateChanged: (state) => {
           setScreenShareEnabled(state);
+        },
+        onStartShare: (producer) => {
+          setScreenshareProducer(producer);
         },
         onSpeakerStateChanged: () => { },
         onCallClosed: () => { },
@@ -84,6 +99,26 @@ function Conference() {
 
     spikaBroadcastClientLocal.connect();
     setSpikabroadcastClient(spikaBroadcastClientLocal);
+
+    // load cameara and microphones
+    (async () => {
+      const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
+
+      const cameras: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "videoinput");
+      if (cameras && cameras.length > 0) {
+        setCameras(cameras);
+        setSelectedCamera(cameras[0]);
+      }
+
+      const microphones: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "audioinput");
+      if (microphones && microphones.length > 0) {
+        setMicrophones(microphones);
+        setSelectedMicrophone(microphones[0]);
+      }
+
+    })();
+
+
   }, []);
 
   useEffect(() => {
@@ -94,6 +129,18 @@ function Conference() {
     else if (participantCount <= 3) setPeerContainerClass("type2");
     else if (participantCount <= 5) setPeerContainerClass("type3");
     else setPeerContainerClass("type4");
+
+    // handle screenshare logic
+    const screenShareparticipant: Participant | undefined = participants.find(participant => participant.consumers.find(consumer => consumer.appData.share));
+    const newScreenShareMode = screenShareparticipant !== undefined;
+
+    if (screenShareMode !== newScreenShareMode && newScreenShareMode && screenShareEnabled) {
+      console.log("going to disable screenshare")
+      spikabroadcastClient.toggleScreenShare();
+    }
+
+    setScreenShareMode(newScreenShareMode);
+
   }, [participants]);
 
   const consumerVideoElmInit = (elm: HTMLVideoElement, i: number) => {
@@ -116,10 +163,19 @@ function Conference() {
     history.push(`/`);
   };
 
+  const updateDevice = async () => {
+
+    if (selectedCamera)
+      await spikabroadcastClient.updateCamera(selectedCamera);
+
+    if (selectedMicrophone)
+      await spikabroadcastClient.updateMicrophone(selectedMicrophone);
+  }
+
   return (
     <div id="spikabroadcast">
       <header></header>
-      <main className="conference-main">
+      <main className={`conference-main ${screenShareMode || screenShareEnabled ? "screen-share" : "no-screen-share"}`}>
         <div className={`peers ${peerContainerClass}`}>
           <div className="me">
             <Me
@@ -139,6 +195,28 @@ function Conference() {
               : null}
           </>
         </div>
+        <>
+          {participants
+            ? participants.map((participant, i) => {
+
+              if (participant.consumers.find(consumer => {
+                return consumer.appData.share
+              })) {
+
+                const videoTrackConsumer: mediasoupClient.types.Consumer = participant.consumers.find(consumer => {
+                  return consumer.appData.share
+                })
+                return (
+                  <div className="screenshare">
+                    <ScreenShareView videoTrack={videoTrackConsumer.track} />
+                  </div>
+                );
+              }
+            })
+            : null}
+
+          {screenShareEnabled ? <div className="screenshare"><ScreenShareView videoTrack={screenShareProducer.track} /></div> : null}
+        </>
 
         <div className="log">
           {log.map(({ time, type, message }) => {
@@ -184,7 +262,16 @@ function Conference() {
             <li>
               <a
                 className="large_icon"
-                onClick={(e) => spikabroadcastClient.toggleScreenShare()}
+                onClick={(e) => {
+                  if (screenShareMode) {
+                    if (confirm("Another use is sharing screen, do you want disable the current share ?"))
+                      return spikabroadcastClient.toggleScreenShare();
+                  } else {
+
+                  }
+                  spikabroadcastClient.toggleScreenShare()
+                }
+                }
               >
                 {!screenShareEnabled ? (
                   <i className="fas fa-desktop" />
@@ -202,7 +289,31 @@ function Conference() {
         </div>
       </main>
       <footer></footer>
-    </div>
+      <div className="settings-button float-button" onClick={e => setOpenSettings(!openSettings)}>
+        <i className="fas fa-bars"></i>
+      </div>
+      <div className={`settings-view ${openSettings ? "open" : "close"}`}>
+        <div className="float-button">
+          <i className="fas fa-times" onClick={e => setOpenSettings(false)}></i>
+        </div>
+
+        <div>
+          <label>Camera</label>
+          <select onChange={e => setSelectedCamera(cameras.find(c => c.deviceId === e.target.value))}>
+            {cameras.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label>Microphone</label>
+          <select onChange={e => setSelectedMicrophone(microphones.find(c => c.deviceId === e.target.value))}>
+            {microphones.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
+          </select>
+        </div>
+        <div className="button-holder">
+          <button onClick={e => { setOpenSettings(false); updateDevice() }}>OK</button>
+        </div>
+      </div>
+    </div >
   );
 }
 
