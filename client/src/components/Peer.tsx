@@ -28,8 +28,8 @@ export default ({ participant }: PeerInterface) => {
   const videoScalabilityMode: mediasoupClient.types.ScalabilityMode =
     videoConsumer
       ? mediasoupClient.parseScalabilityMode(
-          videoConsumer.rtpParameters.encodings[0].scalabilityMode
-        )
+        videoConsumer.rtpParameters.encodings[0].scalabilityMode
+      )
       : null;
 
   const videoSpatialCurrentLayer: number = videoConsumer
@@ -48,6 +48,8 @@ export default ({ participant }: PeerInterface) => {
     <PeerView
       isMe={false}
       peer={participant.peer}
+      muteAudio={audioConsumer && audioConsumer.paused ? true : false}
+      muteVideo={videoConsumer ? true : false}
       audioConsumerId={audioConsumer ? audioConsumer.id : null}
       videoConsumerId={videoConsumer ? videoConsumer.id : null}
       audioRtpParameters={audioConsumer ? audioConsumer.rtpParameters : null}
@@ -72,6 +74,7 @@ export default ({ participant }: PeerInterface) => {
       audioCodec={audioCodec ? audioCodec : null}
       videoCodec={videoCodec ? videoCodec : null}
       videoLayerType={consumerVideoLayerType}
+      displayName={participant.displayName}
     />
   );
 };

@@ -492,6 +492,26 @@ body {
         align-items: center;
         justify-content: center;
         display: flex;
+        position: relative;
+
+        div.info,div.info2 {
+          position: absolute;
+          display: block;
+          width: calc(100% - 16px);
+          line-height: 24px;
+          bottom: 8px;
+          left: 5px;
+          background-color: rgba(0,0,0,0.4);
+          font-size: 12px;
+          padding: 3px;
+          text-align: center;
+        }
+
+        div.info2 {
+          background-color: rgba(0,0,0,0.0);
+          text-align: right;
+          letter-spacing: 20px;
+        }
       }
 
       audio {
@@ -522,6 +542,10 @@ body {
             padding: 5px;
             left: 5px;
           }
+
+          div.info{
+            bottom: 5px;
+          }
         }
 
         div.participant {
@@ -536,6 +560,27 @@ body {
             width: calc(100% - 10px);
             height: calc(100% - 10px);
           }
+
+          div.info,div.info2 {
+            position: absolute;
+            display: block;
+            width: 30%;
+            height: 24px;
+            top: 5px;
+            left: 35%;
+            background-color: rgba(0,0,0,0.4);
+            font-size: 12px;
+            padding: 3px;
+            text-align: center;
+          }
+
+          div.info2 {
+            background-color: rgba(0,0,0,0.0);
+            text-align: right;
+            letter-spacing: 20px;
+          }
+
+
         }
       }
 
@@ -728,7 +773,7 @@ body {
 }
 
 .float-button{
-  background-color: rgba($color: #121212, $alpha: 0.1);
+  background-color: rgba($color: #121212, $alpha: 0.5);
   color: $light_gray;
   font-size: 24px;
   border-radius: 5px;
@@ -742,10 +787,8 @@ body {
 }
 .settings-button{
   position: absolute;
-  top: 50px;
-  right: 50px;
-  width: 50px;
-  height: 50px;
+  top: 25px;
+  right: 25px;
   z-index: 1000;
 }
 

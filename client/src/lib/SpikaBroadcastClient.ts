@@ -133,6 +133,7 @@ export default class SpikaBroadcastClient {
     this.cameraEnabled = true;
     this.micEnabled = true;
     this.screenShareEnabled = false;
+    this.displayName = displayName;
   }
 
   async connect() {
@@ -313,6 +314,9 @@ export default class SpikaBroadcastClient {
 
           consumer.pause();
 
+          if (this.listeners.onParticipantUpdate)
+            this.listeners.onParticipantUpdate(new Map(this.participants));
+
           break;
         }
         case "consumerResumed": {
@@ -322,6 +326,9 @@ export default class SpikaBroadcastClient {
           if (!consumer) break;
 
           consumer.resume();
+
+          if (this.listeners.onParticipantUpdate)
+            this.listeners.onParticipantUpdate(new Map(this.participants));
 
           break;
         }

@@ -26,6 +26,7 @@ export interface PeerViewInterface {
   audioCodec?: string;
   videoCodec?: string;
   videoLayerType?: string;
+  displayName?: string;
 }
 
 export default ({
@@ -49,6 +50,7 @@ export default ({
   videoCodec,
   isMe = false,
   videoLayerType,
+  displayName
 }: PeerViewInterface) => {
   const videoElm: MutableRefObject<HTMLVideoElement | null> =
     useRef<HTMLVideoElement>(null);
@@ -143,6 +145,16 @@ export default ({
 
   return (
     <>
+      {isMe ? null :
+        <>
+          <div className="info">{displayName}</div>
+          <div className="info2">
+            {muteAudio ? <i className="fas fa-microphone-slash" /> : <i className="fas fa-microphone" />}
+            {muteVideo ? <i className="fas fa-video" /> : <i className="fas fa-video-slash" />}
+          </div>
+        </>
+      }
+
       <video
         ref={videoElm}
         autoPlay

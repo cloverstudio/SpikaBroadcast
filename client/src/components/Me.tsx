@@ -17,6 +17,7 @@ export default ({ videoProducer, audioProducer }: MeViewInterface) => {
           videoTrack={videoProducer && videoProducer.track}
           audioTrack={audioProducer && audioProducer.track}
           muteAudio={true}
+          muteVideo={true}
         />
       ) : null}
     </>

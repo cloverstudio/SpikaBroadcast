@@ -45,6 +45,7 @@ function Conference() {
   const [microphones, setMicrophones] = useState<Array<MediaDeviceInfo>>([]);
   const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
   const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
+  const [displayName, setDisplayName] = useState<string>("test");
 
   const peerId = localStorage.getItem("peerId")
     ? localStorage.getItem("peerId")
@@ -58,7 +59,7 @@ function Conference() {
       port: 4443,
       roomId: roomId,
       peerId: Utils.randomStr(8),
-      displayName: "ken",
+      displayName: displayName,
       avatarUrl: "",
       listener: {
         onStartVideo: (producer) => {
@@ -178,6 +179,7 @@ function Conference() {
       <main className={`conference-main ${screenShareMode || screenShareEnabled ? "screen-share" : "no-screen-share"}`}>
         <div className={`peers ${peerContainerClass}`}>
           <div className="me">
+            <div className="info">{displayName}</div>
             <Me
               videoProducer={webcamProcuder}
               audioProducer={microphoneProducer}
