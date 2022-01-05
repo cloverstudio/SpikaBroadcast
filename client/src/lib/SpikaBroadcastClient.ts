@@ -87,7 +87,7 @@ export default class SpikaBroadcastClient {
   sendTransport: mediasoupClientTypes.Transport;
   recvTransport: mediasoupClientTypes.Transport;
   e2eKey: string = null;
-  displayName: string = "test";
+  displayName: string = "";
   browser: any = deviceInfo();
   micProducer: mediasoupClient.types.Producer = null;
   webcamProducer: mediasoupClient.types.Producer = null;

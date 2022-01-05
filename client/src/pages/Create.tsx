@@ -8,6 +8,11 @@ import React, {
 
 import { Link, useHistory } from "react-router-dom";
 
+interface errorMessages {
+  roomId: string,
+  userName: string
+}
+
 //function PageCreate({ gc }: { gc: GlobalContextInterface }) {
 function PageCreate() {
   let history = useHistory();
@@ -22,8 +27,9 @@ function PageCreate() {
     useRef<HTMLVideoElement>(null);
 
   const [roomId, setRoomId] = useState<string>("");
+  const [userName, setUserName] = useState<string>(localStorage.getItem("username") || "");
 
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [errorMessages, setErrorMessages] = useState<errorMessages>({ roomId: "", userName: "" });
 
   useEffect(() => {
     let audioAccepted: boolean = false;
@@ -84,7 +90,7 @@ function PageCreate() {
     }
   }, [videoElm, videoStream]);
 
-  const updateGlobal = () => {};
+  const updateGlobal = () => { };
   return (
     <div id="spikabroadcast">
       <header></header>
@@ -102,15 +108,38 @@ function PageCreate() {
                   setRoomId(e.currentTarget.value)
                 }
               />
-              <span className="error-message">{errorMessage}</span>
+              <span className="error-message">{errorMessages.roomId}</span>
+            </li>
+            <li>
+              <input
+                type="text"
+                className="meeting_link"
+                placeholder="User name"
+                value={userName}
+                onChange={(e: React.FormEvent<HTMLInputElement>) =>
+                  setUserName(e.currentTarget.value)
+                }
+              />
+              <span className="error-message">{errorMessages.userName}</span>
             </li>
             <li>
               <a
                 className="style_blue"
                 onClick={(e) => {
                   if (roomId.length === 0)
-                    return setErrorMessage("Please enter a room number.");
-                  else setErrorMessage("");
+                    return setErrorMessages({
+                      roomId: "Please enter a room number.",
+                      userName: ""
+                    });
+
+                  else if (userName.length === 0)
+                    return setErrorMessages({
+                      roomId: "",
+                      userName: "Please enter a user name"
+                    });
+                  else setErrorMessages({ roomId: "", userName: "" });
+
+                  localStorage.setItem("username", userName);
 
                   updateGlobal();
 

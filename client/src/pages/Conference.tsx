@@ -45,7 +45,7 @@ function Conference() {
   const [microphones, setMicrophones] = useState<Array<MediaDeviceInfo>>([]);
   const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
   const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
-  const [displayName, setDisplayName] = useState<string>("test");
+  const [displayName, setDisplayName] = useState<string>(localStorage.getItem("username") || "No name");
 
   const peerId = localStorage.getItem("peerId")
     ? localStorage.getItem("peerId")
@@ -59,7 +59,7 @@ function Conference() {
       port: 4443,
       roomId: roomId,
       peerId: Utils.randomStr(8),
-      displayName: displayName,
+      displayName: localStorage.getItem("username") || "No name",
       avatarUrl: "",
       listener: {
         onStartVideo: (producer) => {
