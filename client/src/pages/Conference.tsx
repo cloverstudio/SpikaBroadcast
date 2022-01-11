@@ -46,6 +46,7 @@ function Conference() {
   const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
   const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
   const [displayName, setDisplayName] = useState<string>(localStorage.getItem("username") || "No name");
+  const [editNameEnabled, setEditNameEnabled] = useState<boolean>(false);
 
   const peerId = localStorage.getItem("peerId")
     ? localStorage.getItem("peerId")
@@ -173,17 +174,30 @@ function Conference() {
       await spikabroadcastClient.updateMicrophone(selectedMicrophone);
   }
 
+  const changeDisplayName: Function = () => {
+    spikabroadcastClient.changeDisplayName(displayName);
+    setEditNameEnabled(false);
+    localStorage.setItem("username", displayName);
+  }
+
   return (
     <div id="spikabroadcast">
       <header></header>
       <main className={`conference-main ${screenShareMode || screenShareEnabled ? "screen-share" : "no-screen-share"}`}>
         <div className={`peers ${peerContainerClass}`}>
           <div className="me">
-            <div className="info">{displayName}</div>
             <Me
               videoProducer={webcamProcuder}
               audioProducer={microphoneProducer}
             />
+            {editNameEnabled ?
+              <input type="text" value={displayName}
+                onKeyDown={e => e.key === 'Enter' ? changeDisplayName() : null}
+                onChange={(e: React.FormEvent<HTMLInputElement>) =>
+                  setDisplayName(e.currentTarget.value)
+                } /> :
+              <div className="info" onClick={e => setEditNameEnabled(true)}>{displayName}</div>
+            }
           </div>
           <>
             {participants
@@ -289,7 +303,7 @@ function Conference() {
             </li>
           </ul>
         </div>
-      </main>
+      </main >
       <footer></footer>
       <div className="settings-button float-button" onClick={e => setOpenSettings(!openSettings)}>
         <i className="fas fa-bars"></i>

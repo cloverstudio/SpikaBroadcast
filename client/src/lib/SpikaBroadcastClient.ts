@@ -286,7 +286,15 @@ export default class SpikaBroadcastClient {
           break;
         }
         case "peerDisplayNameChanged": {
-          break;
+          const { peerId, displayName } = notification.data;
+          const participant: Participant = this.participants.get(peerId);
+          const peer = notification.data;
+          participant.displayName = displayName;
+          this.participants.set(peerId, participant);
+
+          if (this.listeners.onParticipantUpdate)
+            this.listeners.onParticipantUpdate(this.participants);
+
         }
         case "consumerClosed": {
           const { consumerId } = notification.data;
@@ -432,7 +440,6 @@ export default class SpikaBroadcastClient {
 
   }
 
-
   async updateMicrophone(device: MediaDeviceInfo) {
     this.microphone = device;
     await this._disableMic();
@@ -479,6 +486,10 @@ export default class SpikaBroadcastClient {
         this.logger.error(`<span class="small">${Utils.printObj(e)}</span>`);
       }
     }
+  }
+
+  async changeDisplayName(displayName: string): Promise<void> {
+    await this.protoo.request('changeDisplayName', { displayName });
   }
 
   getCameraState() {

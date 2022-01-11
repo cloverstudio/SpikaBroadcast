@@ -450,6 +450,36 @@ body {
             15vw - 12px
           ); // height . controll buttons . margin + border
           background-color: $video_bg;
+          object-fit: cover;
+        }
+      }
+
+      div {
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        position: relative;
+
+        div.info,div.info2,input {
+          position: absolute;
+          display: block;
+          width: calc(100%);
+          line-height: 24px;
+          bottom: 0px;
+          left: 0px;
+          background-color: rgba(0,0,0,0.4);
+          font-size: 12px;
+          padding: 3px;
+          text-align: center;
+          text-align: center;
+          color: #fff;
+          border: none;
+        }
+
+        div.info2 {
+          background-color: rgba(0,0,0,0.0);
+          text-align: right;
+          letter-spacing: 20px;
         }
       }
     }
@@ -467,9 +497,11 @@ body {
       video {
         width:100%;
         height: 100%;
+        object-fit: cover;
       }
-
     }
+
+
 
     &.no-screen-share div.peers {
       grid-area: video;
@@ -489,23 +521,29 @@ body {
         height: calc(100vh - 205px);
       }
 
+      video {
+        object-fit: cover;
+      }
+
       div {
         align-items: center;
         justify-content: center;
         display: flex;
         position: relative;
 
-        div.info,div.info2 {
+        div.info,div.info2,input {
           position: absolute;
           display: block;
           width: calc(100% - 16px);
           line-height: 24px;
-          bottom: 8px;
+          bottom: 7px;
           left: 5px;
           background-color: rgba(0,0,0,0.4);
           font-size: 12px;
           padding: 3px;
           text-align: center;
+          color: #fff;
+          border: none;
         }
 
         div.info2 {
