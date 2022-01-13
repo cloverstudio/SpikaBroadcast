@@ -14,8 +14,24 @@ import Peer from "../components/Peer";
 import ScreenShareView from "../components/ScreenShareView";
 import Me from "../components/Me";
 import dayjs from "dayjs";
-import deviceInfo from "../lib/deviceInfo";
 
+import SettingModal from "../components/Modal";
+import deviceInfo from "../lib/deviceInfo";
+import iconCamera from "../../../assets/img/camera.svg";
+import iconMic from "../../../assets/img/mic.svg";
+import iconCameraOff from "../../../assets/img/cameraoff.svg";
+import iconMicOff from "../../../assets/img/micoff.svg";
+import iconExit from "../../../assets/img/exit.svg";
+import iconScreenShare from "../../../assets/img/screenshare.svg";
+import iconScreenShareOff from "../../../assets/img/screenshareoff.svg";
+import iconUsers from "../../../assets/img/users.svg";
+import iconSettingArrow from "../../../assets/img/settingarrow.svg";
+
+interface ModalState {
+  showVideo: boolean;
+  showMicrophone: boolean;
+  showName: boolean;
+}
 
 function Conference() {
   let history = useHistory();
@@ -46,7 +62,13 @@ function Conference() {
   const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
   const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
   const [displayName, setDisplayName] = useState<string>(localStorage.getItem("username") || "No name");
+  const [tmpDisplayName, setTmpDisplayName] = useState<string>(localStorage.getItem("username") || "No name");
   const [editNameEnabled, setEditNameEnabled] = useState<boolean>(false);
+  const [modalState, setModalState] = useState<ModalState>({
+    showVideo: false,
+    showMicrophone: false,
+    showName: false
+  })
 
   const peerId = localStorage.getItem("peerId")
     ? localStorage.getItem("peerId")
@@ -145,6 +167,15 @@ function Conference() {
 
   }, [participants]);
 
+
+  useEffect(() => {
+
+    if (spikabroadcastClient)
+      spikabroadcastClient.changeDisplayName(displayName);
+    setEditNameEnabled(false);
+    localStorage.setItem("username", displayName);
+  }, [displayName]);
+
   const consumerVideoElmInit = (elm: HTMLVideoElement, i: number) => {
     if (!participants || !participants[i] || !elm) return;
 
@@ -174,12 +205,6 @@ function Conference() {
       await spikabroadcastClient.updateMicrophone(selectedMicrophone);
   }
 
-  const changeDisplayName: Function = () => {
-    spikabroadcastClient.changeDisplayName(displayName);
-    setEditNameEnabled(false);
-    localStorage.setItem("username", displayName);
-  }
-
   return (
     <div id="spikabroadcast">
       <header></header>
@@ -190,14 +215,7 @@ function Conference() {
               videoProducer={webcamProcuder}
               audioProducer={microphoneProducer}
             />
-            {editNameEnabled ?
-              <input type="text" value={displayName}
-                onKeyDown={e => e.key === 'Enter' ? changeDisplayName() : null}
-                onChange={(e: React.FormEvent<HTMLInputElement>) =>
-                  setDisplayName(e.currentTarget.value)
-                } /> :
-              <div className="info" onClick={e => setEditNameEnabled(true)}>{displayName}</div>
-            }
+            <div className="info" onClick={e => setModalState({ ...modalState, showName: !modalState.showName })}>{displayName}</div>
           </div>
           <>
             {participants
@@ -246,33 +264,37 @@ function Conference() {
         </div>
         <div className="controlls">
           <ul>
-            <li>
+            <li style={{ width: "67px" }}>
               <a
                 className="large_icon"
                 onClick={(e) => spikabroadcastClient.toggleCamera()}
               >
                 {cameraEnabled ? (
-                  <i className="fas fa-video" />
+                  <img src={iconCamera} />
                 ) : (
-                  <i className="fas fa-video-slash" />
+                  <img src={iconCameraOff} />
                 )}
               </a>
             </li>
-            <li>
+            <li className="setting-arrow" onClick={e => setModalState({ ...modalState, showVideo: !modalState.showVideo })}>
+              <img src={iconSettingArrow} />
+            </li>
+            <li style={{ width: "67px" }}>
               <a
                 className="large_icon"
                 onClick={(e) => spikabroadcastClient.toggleMicrophone()}
               >
                 {micEnabled ? (
-                  <i className="fas fa-microphone" />
+                  <img src={iconMic} />
                 ) : (
-                  <i className="fas fa-microphone-slash" />
+                  <img src={iconMicOff} />
                 )}
               </a>
             </li>
+            <li className="setting-arrow" onClick={e => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}><img src={iconSettingArrow} /></li>
             <li>
               <a className="large_icon">
-                <i className="fas fa-users"></i>
+                <img src={iconUsers} />
               </a>
             </li>
             <li>
@@ -290,46 +312,58 @@ function Conference() {
                 }
               >
                 {!screenShareEnabled ? (
-                  <i className="fas fa-desktop" />
+                  <img src={iconScreenShare} />
                 ) : (
-                  <i className="fas fa-stop-circle" />
+                  <img src={iconScreenShareOff} />
                 )}
               </a>
             </li>
             <li>
               <a className="button" onClick={(e) => close()}>
-                <i className="fal fa-times red"></i>
+                <img src={iconExit} />
               </a>
             </li>
           </ul>
         </div>
       </main >
       <footer></footer>
-      <div className="settings-button float-button" onClick={e => setOpenSettings(!openSettings)}>
-        <i className="fas fa-bars"></i>
-      </div>
-      <div className={`settings-view ${openSettings ? "open" : "close"}`}>
-        <div className="float-button">
-          <i className="fas fa-times" onClick={e => setOpenSettings(false)}></i>
-        </div>
 
-        <div>
-          <label>Camera</label>
-          <select onChange={e => setSelectedCamera(cameras.find(c => c.deviceId === e.target.value))}>
-            {cameras.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label>Microphone</label>
-          <select onChange={e => setSelectedMicrophone(microphones.find(c => c.deviceId === e.target.value))}>
-            {microphones.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
-          </select>
-        </div>
-        <div className="button-holder">
-          <button onClick={e => { setOpenSettings(false); updateDevice() }}>OK</button>
-        </div>
-      </div>
+      {
+        modalState.showVideo ? <SettingModal title="Set Video Source" onOK={() => {
+          updateDevice();
+          setModalState({ ...modalState, showVideo: !modalState.showVideo });
+        }} onClose={() => setModalState({ ...modalState, showVideo: !modalState.showVideo })}><>
+            <select onChange={e => setSelectedCamera(cameras.find(c => c.deviceId === e.target.value))}>
+              {cameras.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
+            </select></>
+        </SettingModal> : null
+      }
+
+      {
+        modalState.showMicrophone ? <SettingModal title="Set Audio Source" onOK={() => {
+          updateDevice();
+          setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone });
+        }} onClose={() => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}><>
+            <select onChange={e => setSelectedMicrophone(microphones.find(c => c.deviceId === e.target.value))}>
+              {microphones.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
+            </select></>
+        </SettingModal> : null
+      }
+
+      {
+        modalState.showName ? <SettingModal title="Set Display Name" onOK={() => {
+          setDisplayName(tmpDisplayName);
+          setModalState({ ...modalState, showName: !modalState.showName });
+        }} onClose={() => setModalState({ ...modalState, showName: !modalState.showName })}><>
+            <input type="text" value={tmpDisplayName}
+              onChange={(e: React.FormEvent<HTMLInputElement>) =>
+                setTmpDisplayName(e.currentTarget.value)
+              } /> :
+          </>
+        </SettingModal> : null
+      }
     </div >
+
   );
 }
 

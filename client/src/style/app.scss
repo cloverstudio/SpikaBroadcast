@@ -779,6 +779,7 @@ body {
       display: flex;
       background: #121212;
       height: 75px;
+      overflow: hidden;
 
       @media (max-width: 768px) {
         position: fixed;
@@ -797,6 +798,12 @@ body {
           width: 75px;
           font-size: 20pt;
           text-align: center;
+        }
+
+        li.setting-arrow{
+          width: 12px;
+          line-height: 60px;
+          cursor: pointer;
         }
       }
     }
@@ -875,5 +882,81 @@ body {
     }
 
     margin-bottom: 25px;
+  }
+
+}
+
+.modal{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+
+  .setting-window{
+    width: 250px;
+    padding: 50px;
+    border-radius: 10px;
+    background-color: #fff;
+    position: relative;
+  }
+
+  span {
+    display: block;
+    border-radius: 5px;
+    width: 100%;
+    color: #000;
+    font-weight: bold;
+    background-color: #fff;
+    text-align: center;
+  }
+
+  i {
+    color: #222;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  select {
+    margin-top: 20px;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+    width: 100%;
+    color: #000;
+    font-weight: bold;
+    background-color: #fff;
+  }
+
+  input {
+    margin-top: 20px;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+    width: 100%;
+    color: #000;
+    font-weight: bold;
+    background-color: #fff;
+  }
+
+  button {
+    margin-top: 20px;
+    background-color: $blue;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+    width: 100%;
+    color: #fff;
+    font-weight: bold;
+    border: none;
   }
 }
