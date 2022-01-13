@@ -129,6 +129,9 @@ function Conference() {
       const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
 
       const cameras: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "videoinput");
+      console.log("cameras", cameras);
+      console.log("devices", devices);
+
       if (cameras && cameras.length > 0) {
         setCameras(cameras);
         setSelectedCamera(cameras[0]);
@@ -333,7 +336,9 @@ function Conference() {
           updateDevice();
           setModalState({ ...modalState, showVideo: !modalState.showVideo });
         }} onClose={() => setModalState({ ...modalState, showVideo: !modalState.showVideo })}><>
-            <select onChange={e => setSelectedCamera(cameras.find(c => c.deviceId === e.target.value))}>
+            <select
+              value={selectedCamera.deviceId}
+              onChange={e => setSelectedCamera(cameras.find(c => c.deviceId === e.target.value))}>
               {cameras.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
             </select></>
         </SettingModal> : null
@@ -344,7 +349,9 @@ function Conference() {
           updateDevice();
           setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone });
         }} onClose={() => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}><>
-            <select onChange={e => setSelectedMicrophone(microphones.find(c => c.deviceId === e.target.value))}>
+            <select
+              value={selectedMicrophone.deviceId}
+              onChange={e => setSelectedMicrophone(microphones.find(c => c.deviceId === e.target.value))}>
               {microphones.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
             </select></>
         </SettingModal> : null
