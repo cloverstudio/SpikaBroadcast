@@ -20,6 +20,7 @@ const config: Configuration = {
   devServer: {
     port: 3001,
     historyApiFallback: true,
+    allowedHosts: 'all',
   },
   // Rules of how webpack will take our files, complie & bundle them for the browser
   module: {

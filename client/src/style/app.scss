@@ -580,6 +580,17 @@ body {
           @media (max-width: 768px) {
             padding: 5px;
             left: 5px;
+            width: auto;
+            height: auto;
+            width: 50vw;
+
+            video {
+              width: 50vw;
+              max-width: 50vw;
+              height: auto;
+              padding: 5px;
+            }
+
           }
 
           div.info{
@@ -611,6 +622,12 @@ body {
             font-size: 12px;
             padding: 3px;
             text-align: center;
+
+            @media (max-width: 768px) {
+              width: 100%;
+              left: 0px;
+            }
+
           }
 
           div.info2 {
