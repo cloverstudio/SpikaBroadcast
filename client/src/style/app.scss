@@ -530,7 +530,7 @@ body {
       overflow-y: auto;
 
       @media (max-width: 768px) {
-        height: calc(100vh - 175px);
+        height: calc(100vh - 75px);
       }
 
       @supports (-webkit-touch-callout: none) {
