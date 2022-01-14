@@ -530,11 +530,11 @@ body {
       overflow-y: auto;
 
       @media (max-width: 768px) {
-        height: calc(100vh - 75px);
+        height: calc(100vh - 175px);
       }
 
       @supports (-webkit-touch-callout: none) {
-        height: calc(100vh - 205px);
+        height: calc(100vh - 180px);
       }
 
       div {
@@ -598,6 +598,9 @@ body {
             max-width: 30vw;
             height: auto;
             padding: 5px;
+            transform: rotateY(180deg);
+            -webkit-transform:rotateY(180deg); /* Safari and Chrome */
+            -moz-transform:rotateY(180deg); /* Firefox */
           }
 
           @media (max-width: 768px) {
