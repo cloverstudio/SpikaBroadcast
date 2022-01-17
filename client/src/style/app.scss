@@ -363,17 +363,25 @@ body {
   main.conference-main {
     background-color: $gray;
     width: 100vw;
-    height: auto;
+    height: 100vh;
     background-color: $dark_gray;
     padding: 0 0;
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: auto 75px;
     grid-template-areas:
       "video"
       "buttons";
     color: #fff;
 
+    @media (max-width: 768px) {
+      grid-template-rows: auto 125px;
+    }
+
+    @supports (-webkit-touch-callout: none) {
+      grid-template-rows: auto 180px;
+    }
+    
     &.screen-share{
       grid-template-areas:
         "sceenshare video"
@@ -388,17 +396,6 @@ body {
 
     }
 
-    @media (max-width: 768px) {
-      width: 100vw;
-      grid-template-columns: 1fr;
-      grid-template-rows: 1fr;
-      grid-template-areas: "video";
-    }
-
-    @supports (-webkit-touch-callout: none) {
-      height: auto;
-      grid-template-rows: 1fr;
-    }
 
     div.log {
       display: none;
@@ -524,32 +521,26 @@ body {
       background-color: $gray;
       padding: 0px;
       margin: 0px;
-      height: calc(100vh - 75px);
+      height: 100%;
       width: 100vw;
       overflow-x: hidden;
       overflow-y: auto;
 
-      @media (max-width: 768px) {
-        height: calc(100vh - 125px);
-      }
-
-      @supports (-webkit-touch-callout: none) {
-        height: calc(100vh - 180px);
-      }
 
       div {
         align-items: center;
         justify-content: center;
         display: flex;
+        overflow: hidden;
         position: relative;
 
         div.info,div.info2,input {
           position: absolute;
           display: block;
-          width: calc(100% - 16px);
+          width: 100%;
           line-height: 24px;
-          bottom: 7px;
-          left: 5px;
+          bottom: 0px;
+          left: 0px;
           background-color: rgba(0,0,0,0.4);
           font-size: 12px;
           padding: 3px;
@@ -566,11 +557,11 @@ body {
         
         video {
           object-fit: contain;
-
-          @media (max-width: 768px) {
-            width: 100vw;
-            height: 56.25vw; // 1920 : 1080
-          }
+          width: 100%;
+          height: 100%;
+          margin: 0px;
+          background-color: $video_bg;
+          border: none;
 
         }
 
@@ -670,50 +661,22 @@ body {
         display: grid;
         grid-template-rows: 1fr 1fr;
         grid-template-columns: 1fr 1fr;
+        gap: 5px;
 
         div.me {
           grid-row: 2;
           grid-column: 1;
         }
-
-        div {
-          align-items: center;
-          justify-content: center;
-          display: flex;
-
-          video {
-            width: calc(100vw / 2 - 12px);
-            height: calc(
-              (100vh - 80px) / 2 - 12px
-            ); // height . controll buttons . margin + border
-            margin: 5px;
-            background-color: $video_bg;
-            border: 1px solid $video_border;
-
-            @media (max-width: 768px) {
-              width: calc(100vw / 2 - 12px);
-              height: calc(
-                (100vh - 80px) / 2 - 12px
-              ); // height . address bar . controll buttons . margin + border
-            }
-
-            @supports (-webkit-touch-callout: none) {
-              width: calc(100vw / 2 - 12px);
-              height: calc(
-                (100vh - 110px - 80px) / 2 - 12px
-              ); // height . ios safari buttons . controll buttons . margin + border
-            }
-          }
-        }
       }
 
       &.type3 {
         display: grid;
-        grid-template-rows: repeat(auto-fill, 1fr);
+        grid-template-rows: 1fr 1fr;
         grid-template-columns: 1fr 1fr 1fr;
+        gap: 5px;
 
         @media (max-width: 768px) {
-          grid-template-rows: repeat(auto-fill, 1fr);
+          grid-template-rows: 1fr 1fr 1fr;
           grid-template-columns: 1fr 1fr;
         }
 
@@ -726,47 +689,18 @@ body {
             grid-column: 1;
           }
         }
-
-        div {
-          align-items: center;
-          justify-content: center;
-          display: flex;
-          background-color: $video_bg;
-          padding: 0px;
-
-          video {
-            width: calc(100vw / 3 - 12px);
-            height: calc(
-              (100vh - 80px) / 2 - 12px
-            ); // height . controll buttons . margin + border
-            margin: 5px;
-            background-color: $video_bg;
-            border: 1px solid $video_border;
-
-            @media (max-width: 768px) {
-              width: 50vw;
-              height: calc(
-                (100vh - 80px) / 3
-              ); // height . controll buttons . margin + border
-            }
-            @supports (-webkit-touch-callout: none) {
-              width: calc(100vw / 2 - 12px);
-              height: calc(
-                (100vh - 110px - 80px) / 3 - 12px
-              ); // height . ios safari buttons . controll buttons . margin + border
-            }
-          }
-        }
       }
 
 
       &.type4 {
         display: grid;
-        grid-template-rows: repeat(auto-fill, 1fr );
         grid-template-columns: 1fr 1fr 1fr 1fr;
 
+        div.participant, div.me{
+          height: calc(33vh - 25px);
+        }
+
         @media (max-width: 768px) {
-          grid-template-rows: repeat(auto-fill, 1fr);
           grid-template-columns: 1fr 1fr;
         }
 
@@ -777,37 +711,6 @@ body {
           @media (max-width: 768px) {
             grid-row: 3;
             grid-column: 1;
-          }
-        }
-
-        div {
-          align-items: center;
-          justify-content: center;
-          display: flex;
-          background-color: $video_bg;
-          padding: 0px;
-
-          video {
-            width: calc(100vw / 4 - 12px);
-            height: calc(
-              (100vh - 80px) / 3 - 12px
-            ); // height . controll buttons . margin + border
-            margin: 5px;
-            background-color: $video_bg;
-            border: 1px solid $video_border;
-
-            @media (max-width: 768px) {
-              width: 50vw;
-              height: calc(
-                (100vh - 80px) / 3
-              ); // height . controll buttons . margin + border
-            }
-            @supports (-webkit-touch-callout: none) {
-              width: calc(100vw / 2 - 12px);
-              height: calc(
-                (100vh - 110px - 80px) / 3 - 12px
-              ); // height . ios safari buttons . controll buttons . margin + border
-            }
           }
         }
       }
@@ -823,12 +726,6 @@ body {
       background: #121212;
       height: 75px;
       overflow: hidden;
-
-      @media (max-width: 768px) {
-        position: fixed;
-        bottom: 0px;
-        left: 0px;
-      }
 
       ul {
         list-style: none;
