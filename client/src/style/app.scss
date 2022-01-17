@@ -381,21 +381,6 @@ body {
     @supports (-webkit-touch-callout: none) {
       grid-template-rows: auto 180px;
     }
-    
-    &.screen-share{
-      grid-template-areas:
-        "sceenshare video"
-        "buttons buttons";
-
-        @media (max-width: 768px) {
-          grid-template-areas:
-            "sceenshare"
-            "video"
-            "buttons";
-        }
-
-    }
-
 
     div.log {
       display: none;
@@ -434,35 +419,73 @@ body {
         color: #ccc;
       }
     }
-    
+
+    &.screen-share{
+      grid-template-areas:
+        "sceenshare video"
+        "buttons buttons";
+      grid-template-columns: 75vw 25vw;
+      grid-template-rows: auto 75px;
+      gap: 5px;
+
+      @media (max-width: 768px) {
+        grid-template-areas:
+          "sceenshare"
+          "video"
+          "buttons";
+
+        grid-template-columns: 100vw;
+        grid-template-rows: 75vw auto 75px;
+
+      }
+
+      @media (max-width: 768px) {
+        grid-template-rows: 75vw auto 125px;
+      }
+
+      @supports (-webkit-touch-callout: none) {
+        grid-template-rows:  75vw auto 180px;
+      }
+
+    }
+
     &.screen-share div.peers {
 
       grid-area: video;
       background-color: $gray;
       padding: 0px;
       margin: 0px;
-      height: calc(100vh - 75px);
+      height: 100%;
       overflow-x: hidden;
       overflow-y: auto;
 
-      div {
-        margin: 0px;
-        padding: 0px;
-        video {
-          width: calc(25vw - 12px);
-          height: calc(
-            15vw - 12px
-          ); // height . controll buttons . margin + border
-          background-color: $video_bg;
-          object-fit: contain;
-        }
+      @media (max-width: 768px) {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: repeat(1fr);
       }
+
+
 
       div {
         align-items: center;
         justify-content: center;
         display: flex;
         position: relative;
+        margin: 0px;
+        padding: 0px;
+
+        video {
+          width: 100%;
+          height: 15vw;
+          background-color: $video_bg;
+          object-fit: contain;
+
+          @media (max-width: 768px) {
+            height: 75vw;
+          }
+          
+        }
 
         div.info,div.info2,input {
           position: absolute;
@@ -493,7 +516,7 @@ body {
       background-color: $gray;
       padding: 0px;
       margin: 0px;
-      height: calc(100vh - 75px);
+      height: 100%;
       width: 75vw;
       overflow-x: hidden;
       overflow-y: hidden;
