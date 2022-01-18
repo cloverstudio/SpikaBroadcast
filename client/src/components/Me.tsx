@@ -11,15 +11,13 @@ export interface MeViewInterface {
 export default ({ videoProducer, audioProducer }: MeViewInterface) => {
   return (
     <>
-      {videoProducer && audioProducer ? (
-        <PeerView
-          isMe={true}
-          videoTrack={videoProducer && videoProducer.track}
-          audioTrack={audioProducer && audioProducer.track}
-          muteAudio={true}
-          muteVideo={true}
-        />
-      ) : null}
+      <PeerView
+        isMe={true}
+        videoTrack={videoProducer && videoProducer.track}
+        audioTrack={audioProducer && audioProducer.track}
+        muteAudio={true}
+        muteVideo={true}
+      />
     </>
   );
 };

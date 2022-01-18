@@ -6,6 +6,7 @@ import React, {
   useContext,
 } from "react";
 
+import * as Constants from "../lib/Constants";
 import { Link, useHistory } from "react-router-dom";
 
 interface errorMessages {
@@ -26,8 +27,8 @@ function PageCreate() {
   const videoElm: MutableRefObject<HTMLVideoElement | null> =
     useRef<HTMLVideoElement>(null);
 
-  const [roomId, setRoomId] = useState<string>("");
-  const [userName, setUserName] = useState<string>(localStorage.getItem("username") || "");
+  const [roomId, setRoomId] = useState<string>(localStorage.getItem(Constants.LSKEY_LASTROOM));
+  const [userName, setUserName] = useState<string>(localStorage.getItem(Constants.LSKEY_USERNAME) || "");
 
   const [errorMessages, setErrorMessages] = useState<errorMessages>({ roomId: "", userName: "" });
 
@@ -139,7 +140,7 @@ function PageCreate() {
                     });
                   else setErrorMessages({ roomId: "", userName: "" });
 
-                  localStorage.setItem("username", userName);
+                  localStorage.setItem(Constants.LSKEY_USERNAME, userName);
 
                   updateGlobal();
 

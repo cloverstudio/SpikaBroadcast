@@ -17,6 +17,8 @@ import dayjs from "dayjs";
 
 import SettingModal from "../components/Modal";
 import deviceInfo from "../lib/deviceInfo";
+import * as Constants from "../lib/Constants";
+
 import iconCamera from "../../../assets/img/camera.svg";
 import iconMic from "../../../assets/img/mic.svg";
 import iconCameraOff from "../../../assets/img/cameraoff.svg";
@@ -26,6 +28,7 @@ import iconScreenShare from "../../../assets/img/screenshare.svg";
 import iconScreenShareOff from "../../../assets/img/screenshareoff.svg";
 import iconUsers from "../../../assets/img/users.svg";
 import iconSettingArrow from "../../../assets/img/settingarrow.svg";
+import { constants } from "buffer";
 
 interface ModalState {
   showVideo: boolean;
@@ -61,8 +64,8 @@ function Conference() {
   const [microphones, setMicrophones] = useState<Array<MediaDeviceInfo>>([]);
   const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
   const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
-  const [displayName, setDisplayName] = useState<string>(localStorage.getItem("username") || "No name");
-  const [tmpDisplayName, setTmpDisplayName] = useState<string>(localStorage.getItem("username") || "No name");
+  const [displayName, setDisplayName] = useState<string>(localStorage.getItem(Constants.LSKEY_USERNAME) || "No name");
+  const [tmpDisplayName, setTmpDisplayName] = useState<string>(localStorage.getItem(Constants.LSKEY_USERNAME) || "No name");
   const [editNameEnabled, setEditNameEnabled] = useState<boolean>(false);
   const [modalState, setModalState] = useState<ModalState>({
     showVideo: false,
@@ -70,10 +73,10 @@ function Conference() {
     showName: false
   })
 
-  const peerId = localStorage.getItem("peerId")
-    ? localStorage.getItem("peerId")
+  const peerId = localStorage.getItem(Constants.LSKEY_PEERID)
+    ? localStorage.getItem(Constants.LSKEY_PEERID)
     : Utils.randomStr(8);
-  if (!localStorage.getItem("peerId")) localStorage.setItem("peerId", peerId);
+  if (!localStorage.getItem(Constants.LSKEY_PEERID)) localStorage.setItem(Constants.LSKEY_PEERID, peerId);
 
   useEffect(() => {
     const spikaBroadcastClientLocal = new SpikaBroadcastClient({
@@ -82,7 +85,7 @@ function Conference() {
       port: 4443,
       roomId: roomId,
       peerId: Utils.randomStr(8),
-      displayName: localStorage.getItem("username") || "No name",
+      displayName: localStorage.getItem(Constants.LSKEY_USERNAME) || "No name",
       avatarUrl: "",
       listener: {
         onStartVideo: (producer) => {
@@ -126,25 +129,35 @@ function Conference() {
 
     // load cameara and microphones
     (async () => {
-      const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
 
+      const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
       const cameras: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "videoinput");
-      console.log("cameras", cameras);
-      console.log("devices", devices);
 
       if (cameras && cameras.length > 0) {
         setCameras(cameras);
-        setSelectedCamera(cameras[0]);
+
+        const selectedCameraDeviceId: string = localStorage.getItem(Constants.LSKEY_SELECTEDCAM);
+        if (selectedCameraDeviceId) setSelectedCamera(cameras.find(c => c.deviceId === selectedCameraDeviceId))
+        else setSelectedCamera(cameras[0]);
       }
 
       const microphones: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "audioinput");
       if (microphones && microphones.length > 0) {
         setMicrophones(microphones);
-        setSelectedMicrophone(microphones[0]);
+
+        const selectedMicrophoneDeviceId: string = localStorage.getItem(Constants.LSKEY_SELECTEDMIC);
+        if (selectedMicrophoneDeviceId) setSelectedMicrophone(microphones.find(m => m.deviceId === selectedMicrophoneDeviceId))
+        else setSelectedMicrophone(microphones[0]);
       }
+
+      if (localStorage.getItem(Constants.LSKEY_SELECTEDCAM) || localStorage.getItem(Constants.LSKEY_SELECTEDMIC))
+        updateDevice();
 
     })();
 
+
+    // save roomid
+    localStorage.setItem(Constants.LSKEY_LASTROOM, roomId);
 
   }, []);
 
@@ -176,7 +189,7 @@ function Conference() {
     if (spikabroadcastClient)
       spikabroadcastClient.changeDisplayName(displayName);
     setEditNameEnabled(false);
-    localStorage.setItem("username", displayName);
+    localStorage.setItem(Constants.LSKEY_USERNAME, displayName);
   }, [displayName]);
 
   const consumerVideoElmInit = (elm: HTMLVideoElement, i: number) => {
@@ -201,11 +214,15 @@ function Conference() {
 
   const updateDevice = async () => {
 
-    if (selectedCamera)
+    if (selectedCamera) {
       await spikabroadcastClient.updateCamera(selectedCamera);
+      localStorage.setItem(Constants.LSKEY_SELECTEDCAM, selectedCamera.deviceId);
+    }
 
-    if (selectedMicrophone)
+    if (selectedMicrophone) {
       await spikabroadcastClient.updateMicrophone(selectedMicrophone);
+      localStorage.setItem(Constants.LSKEY_SELECTEDMIC, selectedMicrophone.deviceId);
+    }
   }
 
   return (

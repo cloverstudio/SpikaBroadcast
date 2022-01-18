@@ -155,13 +155,21 @@ export default ({
         </>
       }
 
-      <video
-        ref={videoElm}
-        autoPlay
-        playsInline
-        controls={false}
-        muted={muteVideo}
-      />
+      {videoElm ?
+        <video
+          ref={videoElm}
+          autoPlay
+          playsInline
+          controls={false}
+          muted={muteVideo}
+        /> : <video
+          autoPlay
+          playsInline
+          controls={false}
+          muted={muteVideo}
+        />
+      }
+
       <audio
         ref={audioElm}
         autoPlay
