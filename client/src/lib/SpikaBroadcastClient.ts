@@ -75,6 +75,8 @@ export interface SpikaBroadcastClientConstructorInterface {
   avatarUrl: string;
   listener?: SpikaBroacstLinstener;
   deviceHandlerName?: string;
+  defaultCamera?: MediaDeviceInfo;
+  defaultMicrophone?: MediaDeviceInfo;
 }
 
 export default class SpikaBroadcastClient {
@@ -122,6 +124,8 @@ export default class SpikaBroadcastClient {
     listener,
     displayName,
     avatarUrl,
+    defaultCamera,
+    defaultMicrophone
   }: SpikaBroadcastClientConstructorInterface) {
     this.socketUrl = `wss://${host}:${port}/?roomId=${roomId}&peerId=${peerId}`;
     this.logger = new Logger("SpikaBroadcast", debug);
@@ -134,6 +138,10 @@ export default class SpikaBroadcastClient {
     this.micEnabled = true;
     this.screenShareEnabled = false;
     this.displayName = displayName;
+
+    this.webcam.device = defaultCamera;
+    this.microphone = defaultMicrophone;
+
   }
 
   async connect() {

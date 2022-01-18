@@ -79,53 +79,6 @@ function Conference() {
   if (!localStorage.getItem(Constants.LSKEY_PEERID)) localStorage.setItem(Constants.LSKEY_PEERID, peerId);
 
   useEffect(() => {
-    const spikaBroadcastClientLocal = new SpikaBroadcastClient({
-      debug: true,
-      host: "mediasouptest.clover.studio",
-      port: 4443,
-      roomId: roomId,
-      peerId: Utils.randomStr(8),
-      displayName: localStorage.getItem(Constants.LSKEY_USERNAME) || "No name",
-      avatarUrl: "",
-      listener: {
-        onStartVideo: (producer) => {
-          setWebcamProducer(producer);
-        },
-        onStartAudio: (producer) => {
-          setMicrophoneProducer(producer);
-        },
-        onParticipantUpdate: (participants) => {
-          const participantsAry: Array<Participant> =
-            Array.from(participants, ([key, val]) => val);
-          setParticipants(participantsAry);
-        },
-        onMicrophoneStateChanged: (state) => {
-          setMicEnabled(state);
-        },
-        onCameraStateChanged: (state) => {
-          setCameraEnabled(state);
-        },
-        onScreenShareStateChanged: (state) => {
-          setScreenShareEnabled(state);
-        },
-        onStartShare: (producer) => {
-          setScreenshareProducer(producer);
-        },
-        onSpeakerStateChanged: () => { },
-        onCallClosed: () => { },
-        onUpdateCameraDevice: () => { },
-        onUpdateMicrophoneDevice: () => { },
-        onUpdateSpeakerDevice: () => { },
-        onLogging: (type, message) => {
-          if (typeof message !== "string")
-            message = `<span class="small">${Utils.printObj(message)}</span>`;
-          log.push({ time: dayjs().format("HH:mm"), type, message });
-        },
-      },
-    });
-
-    spikaBroadcastClientLocal.connect();
-    setSpikabroadcastClient(spikaBroadcastClientLocal);
 
     // load cameara and microphones
     (async () => {
@@ -133,12 +86,23 @@ function Conference() {
       const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
       const cameras: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "videoinput");
 
+      let defaultCamera: MediaDeviceInfo = null;
+      let defaultMicrophone: MediaDeviceInfo = null;
+
       if (cameras && cameras.length > 0) {
         setCameras(cameras);
 
         const selectedCameraDeviceId: string = localStorage.getItem(Constants.LSKEY_SELECTEDCAM);
-        if (selectedCameraDeviceId) setSelectedCamera(cameras.find(c => c.deviceId === selectedCameraDeviceId))
-        else setSelectedCamera(cameras[0]);
+        if (selectedCameraDeviceId) {
+          const camera: MediaDeviceInfo = cameras.find(c => c.deviceId === selectedCameraDeviceId);
+          defaultCamera = camera;
+          setSelectedCamera(camera);
+
+        }
+        else {
+          defaultCamera = cameras[0];
+          setSelectedCamera(cameras[0]);
+        }
       }
 
       const microphones: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "audioinput");
@@ -146,12 +110,67 @@ function Conference() {
         setMicrophones(microphones);
 
         const selectedMicrophoneDeviceId: string = localStorage.getItem(Constants.LSKEY_SELECTEDMIC);
-        if (selectedMicrophoneDeviceId) setSelectedMicrophone(microphones.find(m => m.deviceId === selectedMicrophoneDeviceId))
-        else setSelectedMicrophone(microphones[0]);
+        if (selectedMicrophoneDeviceId) {
+          const microphone: MediaDeviceInfo = microphones.find(m => m.deviceId === selectedMicrophoneDeviceId);
+          defaultMicrophone = microphone;
+          setSelectedMicrophone(microphone)
+        }
+        else {
+          defaultMicrophone = microphones[0];
+          setSelectedMicrophone(microphones[0]);
+        }
       }
 
-      if (localStorage.getItem(Constants.LSKEY_SELECTEDCAM) || localStorage.getItem(Constants.LSKEY_SELECTEDMIC))
-        updateDevice();
+      const spikaBroadcastClientLocal = new SpikaBroadcastClient({
+        debug: true,
+        host: "mediasouptest.clover.studio",
+        port: 4443,
+        roomId: roomId,
+        peerId: Utils.randomStr(8),
+        displayName: localStorage.getItem(Constants.LSKEY_USERNAME) || "No name",
+        avatarUrl: "",
+        defaultCamera: defaultCamera,
+        defaultMicrophone: defaultMicrophone,
+        listener: {
+          onStartVideo: (producer) => {
+            setWebcamProducer(producer);
+          },
+          onStartAudio: (producer) => {
+            setMicrophoneProducer(producer);
+          },
+          onParticipantUpdate: (participants) => {
+            const participantsAry: Array<Participant> =
+              Array.from(participants, ([key, val]) => val);
+            setParticipants(participantsAry);
+          },
+          onMicrophoneStateChanged: (state) => {
+            setMicEnabled(state);
+          },
+          onCameraStateChanged: (state) => {
+            setCameraEnabled(state);
+          },
+          onScreenShareStateChanged: (state) => {
+            setScreenShareEnabled(state);
+          },
+          onStartShare: (producer) => {
+            setScreenshareProducer(producer);
+          },
+          onSpeakerStateChanged: () => { },
+          onCallClosed: () => { },
+          onUpdateCameraDevice: () => { },
+          onUpdateMicrophoneDevice: () => { },
+          onUpdateSpeakerDevice: () => { },
+          onLogging: (type, message) => {
+            if (typeof message !== "string")
+              message = `<span class="small">${Utils.printObj(message)}</span>`;
+            log.push({ time: dayjs().format("HH:mm"), type, message });
+          },
+        },
+      });
+
+      spikaBroadcastClientLocal.connect();
+      setSpikabroadcastClient(spikaBroadcastClientLocal);
+
 
     })();
 
@@ -212,17 +231,19 @@ function Conference() {
     history.push(`/`);
   };
 
-  const updateDevice = async () => {
+  const updateDevice = async (camera: MediaDeviceInfo, mic: MediaDeviceInfo) => {
 
-    if (selectedCamera) {
-      await spikabroadcastClient.updateCamera(selectedCamera);
-      localStorage.setItem(Constants.LSKEY_SELECTEDCAM, selectedCamera.deviceId);
+    if (camera) {
+      console.log("update camera", camera);
+      await spikabroadcastClient.updateCamera(camera);
+      localStorage.setItem(Constants.LSKEY_SELECTEDCAM, camera.deviceId);
     }
 
-    if (selectedMicrophone) {
-      await spikabroadcastClient.updateMicrophone(selectedMicrophone);
-      localStorage.setItem(Constants.LSKEY_SELECTEDMIC, selectedMicrophone.deviceId);
+    if (mic) {
+      await spikabroadcastClient.updateMicrophone(mic);
+      localStorage.setItem(Constants.LSKEY_SELECTEDMIC, mic.deviceId);
     }
+
   }
 
   return (
@@ -350,7 +371,7 @@ function Conference() {
 
       {
         modalState.showVideo ? <SettingModal title="Set Video Source" onOK={() => {
-          updateDevice();
+          updateDevice(selectedCamera, selectedMicrophone);
           setModalState({ ...modalState, showVideo: !modalState.showVideo });
         }} onClose={() => setModalState({ ...modalState, showVideo: !modalState.showVideo })}><>
             <select
@@ -363,7 +384,7 @@ function Conference() {
 
       {
         modalState.showMicrophone ? <SettingModal title="Set Audio Source" onOK={() => {
-          updateDevice();
+          updateDevice(selectedCamera, selectedMicrophone);
           setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone });
         }} onClose={() => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}><>
             <select
