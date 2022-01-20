@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import * as mediasoupClient from "mediasoup-client";
 import { Link, useHistory, useParams } from "react-router-dom";
-import SpikaBroadcastClient, { Participant } from "../lib/SpikaBroadcastClient";
+import SpikaBroadcastClient, { Participant, getCameras, getMicrophones } from "../lib/SpikaBroadcastClient";
 import { types as mediasoupClientTypes } from "mediasoup-client";
 import Utils from "../lib/Utils";
 import Peer from "../components/Peer";
@@ -16,6 +16,8 @@ import Me from "../components/Me";
 import dayjs from "dayjs";
 
 import SettingModal from "../components/Modal";
+import MicrophoneSelectorModal from "../components/MicrophoneSelectorModal";
+import VideoSelectorModal from "../components/VideoSelectorModal";
 import deviceInfo from "../lib/deviceInfo";
 import * as Constants from "../lib/Constants";
 
@@ -29,6 +31,7 @@ import iconScreenShareOff from "../../../assets/img/screenshareoff.svg";
 import iconUsers from "../../../assets/img/users.svg";
 import iconSettingArrow from "../../../assets/img/settingarrow.svg";
 import { constants } from "buffer";
+import { BinaryOperatorToken } from "typescript";
 
 interface ModalState {
   showVideo: boolean;
@@ -44,9 +47,9 @@ function Conference() {
 
   const [participants, setParticipants] = useState<Array<Participant>>(null);
   const [consumerRefs, setConsumerRefs] = useState([]);
-  const [cameraEnabled, setCameraEnabled] = useState<boolean>(true);
+  const [cameraEnabled, setCameraEnabled] = useState<boolean>(localStorage.getItem(Constants.LSKEY_MUTECAM) === "0" ? false : true);
   const [screenShareEnabled, setScreenShareEnabled] = useState<boolean>(false); ''
-  const [micEnabled, setMicEnabled] = useState<boolean>(true);
+  const [micEnabled, setMicEnabled] = useState<boolean>(localStorage.getItem(Constants.LSKEY_MUTEMIC) === "0" ? false : true);
   const [spikabroadcastClient, setSpikabroadcastClient] =
     useState<SpikaBroadcastClient>(null);
   const [webcamProcuder, setWebcamProducer] =
@@ -60,8 +63,8 @@ function Conference() {
   const [screenShareMode, setScreenShareMode] = useState<boolean>(false);
   let { roomId }: { roomId?: string } = useParams();
   const [openSettings, setOpenSettings] = useState<boolean>(false);
-  const [cameras, setCameras] = useState<Array<MediaDeviceInfo>>([]);
-  const [microphones, setMicrophones] = useState<Array<MediaDeviceInfo>>([]);
+
+
   const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
   const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
   const [displayName, setDisplayName] = useState<string>(localStorage.getItem(Constants.LSKEY_USERNAME) || "No name");
@@ -71,7 +74,10 @@ function Conference() {
     showVideo: false,
     showMicrophone: false,
     showName: false
-  })
+  });
+
+  const [ready, setReady] = useState<boolean>(false);
+
 
   const peerId = localStorage.getItem(Constants.LSKEY_PEERID)
     ? localStorage.getItem(Constants.LSKEY_PEERID)
@@ -83,21 +89,17 @@ function Conference() {
     // load cameara and microphones
     (async () => {
 
-      const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
-      const cameras: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "videoinput");
 
       let defaultCamera: MediaDeviceInfo = null;
       let defaultMicrophone: MediaDeviceInfo = null;
 
+      const cameras = await getCameras();
       if (cameras && cameras.length > 0) {
-        setCameras(cameras);
-
         const selectedCameraDeviceId: string = localStorage.getItem(Constants.LSKEY_SELECTEDCAM);
         if (selectedCameraDeviceId) {
           const camera: MediaDeviceInfo = cameras.find(c => c.deviceId === selectedCameraDeviceId);
           defaultCamera = camera;
           setSelectedCamera(camera);
-
         }
         else {
           defaultCamera = cameras[0];
@@ -105,10 +107,8 @@ function Conference() {
         }
       }
 
-      const microphones: Array<MediaDeviceInfo> = devices.filter((device: MediaDeviceInfo) => device.kind == "audioinput");
+      const microphones = await getMicrophones();
       if (microphones && microphones.length > 0) {
-        setMicrophones(microphones);
-
         const selectedMicrophoneDeviceId: string = localStorage.getItem(Constants.LSKEY_SELECTEDMIC);
         if (selectedMicrophoneDeviceId) {
           const microphone: MediaDeviceInfo = microphones.find(m => m.deviceId === selectedMicrophoneDeviceId);
@@ -131,6 +131,8 @@ function Conference() {
         avatarUrl: "",
         defaultCamera: defaultCamera,
         defaultMicrophone: defaultMicrophone,
+        enableCamera: cameraEnabled,
+        enableMicrophone: micEnabled,
         listener: {
           onStartVideo: (producer) => {
             setWebcamProducer(producer);
@@ -144,9 +146,11 @@ function Conference() {
             setParticipants(participantsAry);
           },
           onMicrophoneStateChanged: (state) => {
+            localStorage.setItem(Constants.LSKEY_MUTEMIC, state ? "1" : "0");
             setMicEnabled(state);
           },
           onCameraStateChanged: (state) => {
+            localStorage.setItem(Constants.LSKEY_MUTECAM, state ? "1" : "0");
             setCameraEnabled(state);
           },
           onScreenShareStateChanged: (state) => {
@@ -165,6 +169,9 @@ function Conference() {
               message = `<span class="small">${Utils.printObj(message)}</span>`;
             log.push({ time: dayjs().format("HH:mm"), type, message });
           },
+          onJoined: () => {
+            setReady(true);
+          }
         },
       });
 
@@ -262,7 +269,7 @@ function Conference() {
             {participants
               ? participants.map((participant, i) => {
                 return (
-                  <div className="participant">
+                  <div className="participant" key={participant.id}>
                     <Peer participant={participant} key={participant.id} />
                   </div>
                 );
@@ -282,7 +289,7 @@ function Conference() {
                   return consumer.appData.share
                 })
                 return (
-                  <div className="screenshare">
+                  <div className="screenshare" key={participant.id}>
                     <ScreenShareView videoTrack={videoTrackConsumer.track} />
                   </div>
                 );
@@ -294,9 +301,9 @@ function Conference() {
         </>
 
         <div className="log">
-          {log.map(({ time, type, message }) => {
+          {log.map(({ time, type, message }, index) => {
             return (
-              <div className={type}>
+              <div className={type} key={index}>
                 <span className="date">{time}</span>
                 <span dangerouslySetInnerHTML={{ __html: message }} />
               </div>
@@ -305,60 +312,62 @@ function Conference() {
         </div>
         <div className="controlls">
           <ul>
-            <li style={{ width: "67px" }}>
-              <a
-                className="large_icon"
-                onClick={(e) => spikabroadcastClient.toggleCamera()}
-              >
-                {cameraEnabled ? (
-                  <img src={iconCamera} />
-                ) : (
-                  <img src={iconCameraOff} />
-                )}
-              </a>
-            </li>
-            <li className="setting-arrow" onClick={e => setModalState({ ...modalState, showVideo: !modalState.showVideo })}>
-              <img src={iconSettingArrow} />
-            </li>
-            <li style={{ width: "67px" }}>
-              <a
-                className="large_icon"
-                onClick={(e) => spikabroadcastClient.toggleMicrophone()}
-              >
-                {micEnabled ? (
-                  <img src={iconMic} />
-                ) : (
-                  <img src={iconMicOff} />
-                )}
-              </a>
-            </li>
-            <li className="setting-arrow" onClick={e => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}><img src={iconSettingArrow} /></li>
-            <li>
-              <a className="large_icon">
-                <img src={iconUsers} />
-              </a>
-            </li>
-            <li>
-              <a
-                className="large_icon"
-                onClick={(e) => {
-                  if (screenShareMode) {
-                    if (confirm("Another use is sharing screen, do you want disable the current share ?"))
-                      return spikabroadcastClient.toggleScreenShare();
-                  } else {
+            {ready ? <>
+              <li style={{ width: "67px" }}>
+                <a
+                  className="large_icon"
+                  onClick={(e) => spikabroadcastClient.toggleCamera()}
+                >
+                  {cameraEnabled ? (
+                    <img src={iconCamera} />
+                  ) : (
+                    <img src={iconCameraOff} />
+                  )}
+                </a>
+              </li>
+              <li className="setting-arrow" onClick={e => setModalState({ ...modalState, showVideo: !modalState.showVideo })}>
+                <img src={iconSettingArrow} />
+              </li>
+              <li style={{ width: "67px" }}>
+                <a
+                  className="large_icon"
+                  onClick={(e) => spikabroadcastClient.toggleMicrophone()}
+                >
+                  {micEnabled ? (
+                    <img src={iconMic} />
+                  ) : (
+                    <img src={iconMicOff} />
+                  )}
+                </a>
+              </li>
+              <li className="setting-arrow" onClick={e => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}><img src={iconSettingArrow} /></li>
+              <li>
+                <a className="large_icon">
+                  <img src={iconUsers} />
+                </a>
+              </li>
+              <li>
+                <a
+                  className="large_icon"
+                  onClick={(e) => {
+                    if (screenShareMode) {
+                      if (confirm("Another use is sharing screen, do you want disable the current share ?"))
+                        return spikabroadcastClient.toggleScreenShare();
+                    } else {
 
+                    }
+                    spikabroadcastClient.toggleScreenShare()
                   }
-                  spikabroadcastClient.toggleScreenShare()
-                }
-                }
-              >
-                {!screenShareEnabled ? (
-                  <img src={iconScreenShare} />
-                ) : (
-                  <img src={iconScreenShareOff} />
-                )}
-              </a>
-            </li>
+                  }
+                >
+                  {!screenShareEnabled ? (
+                    <img src={iconScreenShare} />
+                  ) : (
+                    <img src={iconScreenShareOff} />
+                  )}
+                </a>
+              </li>
+            </> : null}
             <li>
               <a className="button" onClick={(e) => close()}>
                 <img src={iconExit} />
@@ -370,31 +379,26 @@ function Conference() {
       <footer></footer>
 
       {
-        modalState.showVideo ? <SettingModal title="Set Video Source" onOK={() => {
-          updateDevice(selectedCamera, selectedMicrophone);
-          setModalState({ ...modalState, showVideo: !modalState.showVideo });
-        }} onClose={() => setModalState({ ...modalState, showVideo: !modalState.showVideo })}><>
-            <select
-              value={selectedCamera.deviceId}
-              onChange={e => setSelectedCamera(cameras.find(c => c.deviceId === e.target.value))}>
-              {cameras.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
-            </select></>
-        </SettingModal> : null
+        modalState.showVideo ? <VideoSelectorModal
+          selectedDeviceId={selectedCamera ? selectedCamera.deviceId : ""}
+          onOK={() => {
+            updateDevice(selectedCamera, selectedMicrophone);
+            setModalState({ ...modalState, showVideo: !modalState.showVideo });
+          }}
+          onClose={() => setModalState({ ...modalState, showVideo: !modalState.showVideo })}
+          onChange={(media: MediaDeviceInfo) => setSelectedCamera(media)} /> : null
       }
 
       {
-        modalState.showMicrophone ? <SettingModal title="Set Audio Source" onOK={() => {
-          updateDevice(selectedCamera, selectedMicrophone);
-          setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone });
-        }} onClose={() => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}><>
-            <select
-              value={selectedMicrophone.deviceId}
-              onChange={e => setSelectedMicrophone(microphones.find(c => c.deviceId === e.target.value))}>
-              {microphones.map((device: MediaDeviceInfo) => <option value={device.deviceId}>{device.label}</option>)}
-            </select></>
-        </SettingModal> : null
+        modalState.showMicrophone ? <MicrophoneSelectorModal
+          selectedDeviceId={selectedMicrophone ? selectedMicrophone.deviceId : ""}
+          onOK={() => {
+            updateDevice(selectedCamera, selectedMicrophone);
+            setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone });
+          }}
+          onClose={() => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}
+          onChange={(media: MediaDeviceInfo) => setSelectedMicrophone(media)} /> : null
       }
-
       {
         modalState.showName ? <SettingModal title="Set Display Name" onOK={() => {
           setDisplayName(tmpDisplayName);
