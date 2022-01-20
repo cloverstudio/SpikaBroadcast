@@ -122,7 +122,7 @@ function Conference() {
       }
 
       const spikaBroadcastClientLocal = new SpikaBroadcastClient({
-        debug: false,
+        debug: true,
         host: "mediasouptest.clover.studio",
         port: 4443,
         roomId: roomId,
