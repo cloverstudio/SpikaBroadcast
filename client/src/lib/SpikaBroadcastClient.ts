@@ -9,6 +9,7 @@ import { ShorthandPropertyAssignment } from "typescript";
 import { timeStamp } from "console";
 import { mainModule } from "process";
 import Utils from "../lib/Utils";
+import { utils } from "mocha";
 
 const PC_PROPRIETARY_CONSTRAINTS = {
   optional: [{ googDscp: true }],
@@ -49,10 +50,21 @@ interface SpikaBroacstLinstener {
   onSpeakerStateChanged: () => void;
   onScreenShareStateChanged: (state: boolean) => void;
   onCallClosed: () => void;
+  onJoined: () => void;
   onUpdateCameraDevice: () => void;
   onUpdateMicrophoneDevice: () => void;
   onUpdateSpeakerDevice: () => void;
   onLogging: (type: string, message: string) => void;
+}
+
+export async function getCameras(): Promise<Array<MediaDeviceInfo>> {
+  const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
+  return devices.filter((device: MediaDeviceInfo) => device.kind == "videoinput");
+}
+
+export async function getMicrophones(): Promise<Array<MediaDeviceInfo>> {
+  const devices: Array<MediaDeviceInfo> = await navigator.mediaDevices.enumerateDevices();
+  return devices.filter((device: MediaDeviceInfo) => device.kind == "audioinput");
 }
 
 export interface Participant {
@@ -77,6 +89,8 @@ export interface SpikaBroadcastClientConstructorInterface {
   deviceHandlerName?: string;
   defaultCamera?: MediaDeviceInfo;
   defaultMicrophone?: MediaDeviceInfo;
+  enableCamera?: boolean,
+  enableMicrophone?: boolean
 }
 
 export default class SpikaBroadcastClient {
@@ -125,7 +139,9 @@ export default class SpikaBroadcastClient {
     displayName,
     avatarUrl,
     defaultCamera,
-    defaultMicrophone
+    defaultMicrophone,
+    enableCamera,
+    enableMicrophone
   }: SpikaBroadcastClientConstructorInterface) {
     this.socketUrl = `wss://${host}:${port}/?roomId=${roomId}&peerId=${peerId}`;
     this.logger = new Logger("SpikaBroadcast", debug);
@@ -134,8 +150,8 @@ export default class SpikaBroadcastClient {
     this.logger.debug(`SocketUrl: ${this.socketUrl}`);
     this.listeners = listener;
     this.participants = new Map();
-    this.cameraEnabled = true;
-    this.micEnabled = true;
+    this.cameraEnabled = enableCamera;
+    this.micEnabled = enableMicrophone;
     this.screenShareEnabled = false;
     this.displayName = displayName;
 
@@ -605,9 +621,6 @@ export default class SpikaBroadcastClient {
           });
 
           this.logger.debug(`Transport produceResult`);
-          this.logger.error(
-            `<span class="small">${Utils.printObj(produceResult)}</span>`
-          );
 
           callback({ id: produceResult.id });
         } catch (error) {
@@ -719,8 +732,21 @@ export default class SpikaBroadcastClient {
     if (this.listeners.onParticipantUpdate)
       this.listeners.onParticipantUpdate(this.participants);
 
-    this._enableMic();
-    this._enableWebcam();
+
+    console.log("sss")
+    await this._enableMic();
+    if (!this.micEnabled) {
+      // set initial state of mic
+      await this.micProducer.pause();
+      await this.protoo.request("pauseProducer", {
+        producerId: this.micProducer.id,
+      });
+    }
+
+    if (this.cameraEnabled) await this._enableWebcam();
+
+    if (this.listeners.onJoined)
+      this.listeners.onJoined();
   }
 
   async _enableMic() {

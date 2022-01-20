@@ -9,78 +9,55 @@ import React, {
 import * as Constants from "../lib/Constants";
 import { Link, useHistory } from "react-router-dom";
 
+import MicrophoneSelectorModal from "../components/MicrophoneSelectorModal";
+import VideoSelectorModal from "../components/VideoSelectorModal";
+
+import iconCamera from "../../../assets/img/camera.svg";
+import iconMic from "../../../assets/img/mic.svg";
+import iconCameraOff from "../../../assets/img/cameraoff.svg";
+import iconMicOff from "../../../assets/img/micoff.svg";
+import iconSettingArrow from "../../../assets/img/settingarrow.svg";
+
 interface errorMessages {
   roomId: string,
   userName: string
 }
 
+
+interface ModalState {
+  showVideo: boolean;
+  showMicrophone: boolean;
+}
+
+
 //function PageCreate({ gc }: { gc: GlobalContextInterface }) {
 function PageCreate() {
   let history = useHistory();
-  const [videoState, setVideoState] = useState<boolean>(false);
+  const [videoState, setVideoState] = useState<boolean>(localStorage.getItem(Constants.LSKEY_MUTECAM) === "0" ? false : true);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
-  const [microphoneState, setMicrophoneState] = useState<boolean>(false);
+  const [microphoneState, setMicrophoneState] = useState<boolean>(localStorage.getItem(Constants.LSKEY_MUTEMIC) === "0" ? false : true);
   const [deviceStateMessage, setDeviceStateMessage] =
-    useState<string>("Waiting devices");
+    useState<string>("Waiting permission");
   const [videoReady, setVideoReady] = useState<boolean>(false);
   const [microphoneReady, setMicrophoneReady] = useState<boolean>(false);
   const videoElm: MutableRefObject<HTMLVideoElement | null> =
     useRef<HTMLVideoElement>(null);
 
+  const [selectedCamera, setSelectedCamera] = useState<MediaDeviceInfo>(null);
+  const [selectedMicrophone, setSelectedMicrophone] = useState<MediaDeviceInfo>(null);
+
   const [roomId, setRoomId] = useState<string>(localStorage.getItem(Constants.LSKEY_LASTROOM));
   const [userName, setUserName] = useState<string>(localStorage.getItem(Constants.LSKEY_USERNAME) || "");
 
   const [errorMessages, setErrorMessages] = useState<errorMessages>({ roomId: "", userName: "" });
+  const [modalState, setModalState] = useState<ModalState>({
+    showVideo: false,
+    showMicrophone: false
+  })
+
 
   useEffect(() => {
-    let audioAccepted: boolean = false;
-    let videAccepted: boolean = false;
-    // initial video
-    (async () => {
-      try {
-        const audioStream: MediaStream =
-          await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: false,
-          });
-
-        const audioTrack: MediaStreamTrack = audioStream.getAudioTracks()[0];
-        setMicrophoneState(true);
-        setDeviceStateMessage("Microphone ready, waiting camera.");
-        setMicrophoneReady(true);
-        audioAccepted = true;
-
-        if (audioStream) {
-          audioStream.getTracks().forEach(function (track) {
-            if (track.readyState == "live") {
-              track.stop();
-            }
-          });
-        }
-      } catch (e) {
-        setDeviceStateMessage("Waiting camera.");
-        setMicrophoneState(false);
-      }
-
-      try {
-        const videoStream: MediaStream =
-          await navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: true,
-          });
-
-        setVideoState(true);
-        setVideoStream(videoStream);
-        setVideoReady(true);
-
-        if (audioAccepted) setDeviceStateMessage("Device ready.");
-        else setDeviceStateMessage("Camera ready.");
-      } catch (e) {
-        if (audioAccepted) setDeviceStateMessage("Microphone is ready.");
-        else setDeviceStateMessage("Devices are not ready.");
-        setVideoState(false);
-      }
-    })();
+    updateDevice();
   }, []);
 
   // when video element is ready
@@ -91,7 +68,103 @@ function PageCreate() {
     }
   }, [videoElm, videoStream]);
 
-  const updateGlobal = () => { };
+  useEffect(() => {
+    localStorage.setItem(Constants.LSKEY_MUTECAM, videoState ? "1" : "0");
+    localStorage.setItem(Constants.LSKEY_MUTEMIC, microphoneState ? "1" : "0");
+    updateDevice();
+  }, [videoState, microphoneState]);
+
+
+  const updateDevice = () => {
+
+    let audioAccepted: boolean = false;
+    let videAccepted: boolean = false;
+
+    // initial video
+    if (videoState) {
+      (async () => {
+        try {
+
+          let cameraDeviceId = null;
+          if (!selectedCamera)
+            cameraDeviceId = localStorage.getItem(Constants.LSKEY_SELECTEDCAM);
+          else
+            cameraDeviceId = selectedCamera.deviceId;
+
+          const videoStream: MediaStream =
+            cameraDeviceId ? await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: {
+                deviceId: cameraDeviceId
+              },
+            }) :
+              await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: true
+              });
+
+          setVideoState(true);
+          setVideoStream(videoStream);
+          setVideoReady(true);
+
+          if (audioAccepted) setDeviceStateMessage("Device ready.");
+          else setDeviceStateMessage("Camera ready.");
+
+        } catch (e) {
+          if (audioAccepted) setDeviceStateMessage("Microphone is ready.");
+          else setDeviceStateMessage("Devices are not ready.");
+          setVideoState(false);
+        }
+      })();
+
+    }
+
+    // initial mic
+    if (microphoneState) {
+      (async () => {
+        try {
+          let micDeviceId = null;
+          if (!selectedMicrophone)
+            micDeviceId = localStorage.getItem(Constants.LSKEY_SELECTEDMIC);
+          else
+            micDeviceId = selectedMicrophone.deviceId;
+
+          const audioStream: MediaStream =
+            micDeviceId ? await navigator.mediaDevices.getUserMedia({
+              audio: {
+                deviceId: micDeviceId
+              },
+              video: false,
+            }) :
+              await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: false,
+              });
+
+          const audioTrack: MediaStreamTrack = audioStream.getAudioTracks()[0];
+          setMicrophoneState(true);
+          setDeviceStateMessage("Microphone ready, waiting camera.");
+          setMicrophoneReady(true);
+          audioAccepted = true;
+
+          if (audioStream) {
+            audioStream.getTracks().forEach(function (track) {
+              if (track.readyState == "live") {
+                track.stop();
+              }
+            });
+          }
+
+        } catch (e) {
+          setDeviceStateMessage("Waiting Microphone.");
+          setMicrophoneState(false);
+        }
+
+      })();
+    }
+
+  }
+
   return (
     <div id="spikabroadcast">
       <header></header>
@@ -142,8 +215,6 @@ function PageCreate() {
 
                   localStorage.setItem(Constants.LSKEY_USERNAME, userName);
 
-                  updateGlobal();
-
                   if (videoStream) {
                     videoStream.getTracks().forEach(function (track) {
                       if (track.readyState == "live") {
@@ -175,53 +246,64 @@ function PageCreate() {
             />
             <ul>
               <li>
-                <a className="large_icon">
+                <a className="large_icon" onClick={e => {
+                  setVideoState(!videoState);
+                }}>
                   {videoState ? (
-                    <i
-                      className="fas fa-video"
-                      onClick={(e) => {
-                        videoReady && setVideoState(!videoState);
-                        updateGlobal();
-                      }}
-                    />
+                    <img src={iconCamera} />
                   ) : (
-                    <i
-                      className="fas fa-video-slash"
-                      onClick={(e) => {
-                        videoReady && setVideoState(!videoState);
-                        updateGlobal();
-                      }}
-                    />
+                    <img src={iconCameraOff} />
                   )}
                 </a>
               </li>
+              <li className="setting-arrow" >
+                <img src={iconSettingArrow} onClick={e => setModalState({ ...modalState, showVideo: !modalState.showVideo })} />
+              </li>
               <li>
-                <a className="large_icon">
+                <a className="large_icon" onClick={(e) => {
+                  setMicrophoneState(!microphoneState);
+                }}>
                   {microphoneState ? (
-                    <i
-                      className="fas fa-microphone"
-                      onClick={(e) => {
-                        microphoneReady && setMicrophoneState(!microphoneState);
-                        updateGlobal();
-                      }}
-                    />
+                    <img src={iconMic} />
                   ) : (
-                    <i
-                      className="fas fa-microphone-slash"
-                      onClick={(e) => {
-                        microphoneReady && setMicrophoneState(!microphoneState);
-                        updateGlobal();
-                      }}
-                    />
+                    <img src={iconMicOff} />
                   )}
                 </a>
+              </li>
+              <li className="setting-arrow" onClick={e => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}>
+                <img src={iconSettingArrow} />
               </li>
             </ul>
           </div>
         </div>
-      </main>
+
+        {
+          modalState.showVideo ? <VideoSelectorModal
+            selectedDeviceId={selectedCamera ? selectedCamera.deviceId : localStorage.getItem(Constants.LSKEY_SELECTEDCAM)}
+            onOK={() => {
+              updateDevice();
+              setModalState({ ...modalState, showVideo: !modalState.showVideo });
+              if (selectedCamera) localStorage.setItem(Constants.LSKEY_SELECTEDCAM, selectedCamera.deviceId);
+            }}
+            onClose={() => setModalState({ ...modalState, showVideo: !modalState.showVideo })}
+            onChange={(media: MediaDeviceInfo) => { setSelectedCamera(media) }} /> : null
+        }
+
+        {
+          modalState.showMicrophone ? <MicrophoneSelectorModal
+            selectedDeviceId={selectedMicrophone ? selectedMicrophone.deviceId : localStorage.getItem(Constants.LSKEY_SELECTEDMIC)}
+            onOK={() => {
+              updateDevice();
+              setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone });
+              localStorage.setItem(Constants.LSKEY_SELECTEDMIC, selectedMicrophone.deviceId);
+            }}
+            onClose={() => setModalState({ ...modalState, showMicrophone: !modalState.showMicrophone })}
+            onChange={(media: MediaDeviceInfo) => { setSelectedMicrophone(media) }} /> : null
+        }
+
+      </main >
       <footer></footer>
-    </div>
+    </div >
   );
 }
 

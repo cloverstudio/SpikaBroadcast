@@ -227,58 +227,18 @@ body {
 
         li {
           display: inline-block;
-          height: 3.5rem;
-          line-height: 3.5rem;
-          padding: 0 1.5rem;
-          position: relative;
-          a {
-            font-size: 0.6rem;
-            vertical-align: middle;
-            padding: 0.5rem 0.3rem;
-            border-radius: 10px;
-            &.large_icon {
-              font-size: 1.6rem;
-              width: 40px;
-              display: inline-block;
-            }
-            &.selected {
-              background-color: $middle_gray;
-            }
-            i.fas {
-              width: 36px;
-            }
-          }
-          .popup {
-            position: absolute;
-            right: 1.4rem;
-            bottom: 2.7rem;
-            width: 200px;
-            background-color: $middle_gray;
-            border-radius: 16px;
-            padding: 0.5rem 1.2rem;
-            &.microfone {
-              left: 3.2rem;
-            }
-            h4,
-            p {
-              font-weight: 500;
-              padding: 0;
-              margin: 0;
-              text-align: left;
-              line-height: 1.5rem;
-              a {
-                font-size: 0.8rem;
-              }
-              &.selected {
-                a {
-                  color: $blue;
-                }
-              }
-            }
-            h4 {
-              padding: 0.4rem 0 0.2rem;
-            }
-          }
+          width: 60px;
+          height: 60px;
+          line-height: 60px;
+          padding: 0 5px;
+          vertical-align: middle;
+        }
+
+        li.setting-arrow{
+          width: 12px;
+          line-height: 60px;
+          padding: 0 5px;
+          cursor: pointer;
         }
       }
     }
