@@ -71,6 +71,7 @@ export interface Participant {
   id: string;
   displayName: string;
   peer: Peer;
+  activeSpeaker: boolean;
   consumers: Array<mediasoupClient.types.Consumer>;
   consumerSpatialCurrentLayers?: Map<string, number>; // comsumerId, layer
   consumerTemporalCurrentLayers?: Map<string, number>; // comsumerId, layer
@@ -281,6 +282,7 @@ export default class SpikaBroadcastClient {
           break;
         }
         case "newPeer": {
+
           const peer = notification.data;
 
           this.participants.set(peer.id, {
@@ -291,6 +293,7 @@ export default class SpikaBroadcastClient {
             consumerVideoLayerType: new Map(),
             consumerSpatialCurrentLayers: new Map(),
             consumerTemporalCurrentLayers: new Map(),
+            activeSpeaker: false
           });
 
           if (this.listeners.onParticipantUpdate)
@@ -395,7 +398,25 @@ export default class SpikaBroadcastClient {
           break;
         }
         case "activeSpeaker": {
-          break;
+
+          console.log("active speaker", notification.data);
+          const { peerId } = notification.data;
+
+          // turn all participant off
+          this.participants.forEach(participant => {
+            participant.activeSpeaker = false;
+            this.participants.set(participant.peer.data.id, participant);
+            console.log("active", participant.peer)
+          });
+
+
+          const participant: Participant = this.participants.get(peerId);
+          participant.activeSpeaker = true;
+          this.participants.set(peerId, participant);
+          console.log("participant", participant)
+
+          if (this.listeners.onParticipantUpdate)
+            this.listeners.onParticipantUpdate(this.participants);
         }
         default: {
           /*
@@ -535,16 +556,17 @@ export default class SpikaBroadcastClient {
       "getRouterRtpCapabilities"
     );
 
-    this.logger.debug("↓routerRtpCapabilities");
-    this.logger.debug(
-      `<span class="small">${Utils.printObj(routerRtpCapabilities)}</span>`
-    );
+    //this.logger.debug("↓routerRtpCapabilities");
+    //this.logger.debug(
+    //  `<span class="small">${Utils.printObj(routerRtpCapabilities)}</span>`
+    //);
 
     await this.mediasoupDevice.load({ routerRtpCapabilities });
     // NOTE: Stuff to play remote audios due to browsers' new autoplay policy.
     //
     // Just get access to the mic and DO NOT close the mic track for a while.
     // Super hack!
+
     {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioTrack = stream.getAudioTracks()[0];
@@ -559,10 +581,10 @@ export default class SpikaBroadcastClient {
       sctpCapabilities: this.mediasoupDevice.sctpCapabilities,
     });
 
-    this.logger.debug("↓transportInfo");
-    this.logger.debug(
-      `<span class="small">${Utils.printObj(transportInfo)}</span>`
-    );
+    //this.logger.debug("↓transportInfo");
+    //this.logger.debug(
+    //  `<span class="small">${Utils.printObj(transportInfo)}</span>`
+    //);
 
     const { id, iceParameters, iceCandidates, dtlsParameters, sctpParameters } =
       transportInfo;
@@ -724,6 +746,7 @@ export default class SpikaBroadcastClient {
         consumerVideoLayerType: new Map(),
         consumerSpatialCurrentLayers: new Map(),
         consumerTemporalCurrentLayers: new Map(),
+        activeSpeaker: false
       });
 
       this.logger.debug(`new peer ${peer.id}`);
@@ -732,9 +755,8 @@ export default class SpikaBroadcastClient {
     if (this.listeners.onParticipantUpdate)
       this.listeners.onParticipantUpdate(this.participants);
 
-
-    console.log("sss")
     await this._enableMic();
+
     if (!this.micEnabled) {
       // set initial state of mic
       await this.micProducer.pause();
@@ -934,10 +956,12 @@ export default class SpikaBroadcastClient {
         codecOptions,
         codec,
       });
-      this.logger.debug("webcamProducer");
-      this.logger.debug(
-        `<span class="small">${Utils.printObj(this.webcamProducer)}</span>`
-      );
+
+
+      //this.logger.debug("webcamProducer");
+      //this.logger.debug(
+      //  `<span class="small">${Utils.printObj(this.webcamProducer)}</span>`
+      //);
 
       if (this.listeners.onStartVideo)
         this.listeners.onStartVideo(this.webcamProducer);
@@ -996,14 +1020,14 @@ export default class SpikaBroadcastClient {
 
     const devices = await navigator.mediaDevices.enumerateDevices();
 
-    this.logger.debug("mediaDevices");
-    this.logger.debug(`<span class="small">${Utils.printObj(devices)}</span>`);
+    //this.logger.debug("mediaDevices");
+    //this.logger.debug(`<span class="small">${Utils.printObj(devices)}</span>`);
 
     for (const device of devices) {
       if (device.kind !== "videoinput") continue;
 
-      this.logger.debug("webcam found");
-      this.logger.debug(`<span class="small">${Utils.printObj(device)}</span>`);
+      //this.logger.debug("webcam found");
+      //this.logger.debug(`<span class="small">${Utils.printObj(device)}</span>`);
 
       this.webcams.set(device.deviceId, device);
     }

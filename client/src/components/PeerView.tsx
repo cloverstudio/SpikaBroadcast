@@ -154,7 +154,7 @@ export default ({
           </div>
         </>
       }
-
+      <span>{displayName ? displayName.substring(0, 1) : ""}</span>
       {videoElm ?
         <video
           ref={videoElm}

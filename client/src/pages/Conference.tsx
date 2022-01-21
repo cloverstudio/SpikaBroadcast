@@ -269,7 +269,7 @@ function Conference() {
             {participants
               ? participants.map((participant, i) => {
                 return (
-                  <div className="participant" key={participant.id}>
+                  <div className={`participant ${participant.activeSpeaker ? "active" : ""}`} key={participant.id} >
                     <Peer participant={participant} key={participant.id} />
                   </div>
                 );
