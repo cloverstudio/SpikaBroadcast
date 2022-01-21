@@ -399,21 +399,20 @@ export default class SpikaBroadcastClient {
         }
         case "activeSpeaker": {
 
-          console.log("active speaker", notification.data);
+
           const { peerId } = notification.data;
 
           // turn all participant off
-          this.participants.forEach(participant => {
+          this.participants.forEach((participant, peerId) => {
             participant.activeSpeaker = false;
-            this.participants.set(participant.peer.data.id, participant);
-            console.log("active", participant.peer)
+            this.participants.set(peerId, participant);
           });
 
-
-          const participant: Participant = this.participants.get(peerId);
-          participant.activeSpeaker = true;
-          this.participants.set(peerId, participant);
-          console.log("participant", participant)
+          if (peerId) {
+            const participant: Participant = this.participants.get(peerId);
+            participant.activeSpeaker = true;
+            this.participants.set(peerId, participant);
+          }
 
           if (this.listeners.onParticipantUpdate)
             this.listeners.onParticipantUpdate(this.participants);

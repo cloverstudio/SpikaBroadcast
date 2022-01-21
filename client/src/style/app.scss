@@ -463,6 +463,8 @@ body {
           color: #fff;
           border: none;
           z-index: 120;
+          font-family: "Poppins", sans-serif;
+          transition: all 0.2s ease;
         }
 
         div.info2 {
@@ -484,6 +486,15 @@ body {
           display: flex;
           text-transform: uppercase;
           z-index: 100;
+        }
+
+
+        /* active speaker */
+        &.active{
+          div.info {
+            font-weight: 900;
+            font-size: 13px !important;
+          }
         }
 
       }
@@ -548,6 +559,8 @@ body {
           color: #fff;
           border: none;
           z-index: 120;
+          font-family: "Poppins", sans-serif;
+          transition: all 0.2s ease;
         }
 
         span {
@@ -582,6 +595,13 @@ body {
 
         }
 
+        /* active speaker */
+        &.active{
+          div.info {
+            font-weight: 900;
+            font-size: 13px !important;
+          }
+        }
       }
 
       audio {
